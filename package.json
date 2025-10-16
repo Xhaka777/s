@@ -19,5 +19,8 @@
   "packageManager": "pnpm@8.0.0",
   "engines": {
     "node": ">=18"
+  },
+  "dependencies": {
+    "@babel/runtime": "^7.28.4"
   }
 }
