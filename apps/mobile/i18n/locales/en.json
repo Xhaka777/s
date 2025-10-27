@@ -1,0 +1,79 @@
+{
+  "welcome": {
+    "tagline": "Spoon your way to love!",
+    "signIn": "Sign in",
+    "createAccount": "Create an account",
+    "terms": "By signing up, you agree to our {{terms}}.",
+    "termsLink": "Terms",
+    "privacyPolicy": "See how we use your data in our {{privacyPolicy}}",
+    "privacyPolicyLink": "Privacy Policy",
+    "languageSelector": "Language"
+  },
+  "auth": {
+    "welcomeBack": "Welcome back",
+    "signInSubtitle": "Sign in to continue",
+    "email": "Email",
+    "emailPlaceholder": "your@email.com",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot password?",
+    "signInButton": "Sign in",
+    "noAccount": "Don't have an account? ",
+    "signUpLink": "Sign up",
+    "resetPassword": "Reset password",
+    "resetPasswordSubtitle": "Enter your email and we'll send you a link to reset your password",
+    "sendResetLink": "Send reset link",
+    "backToSignIn": "Back to sign in",
+    "checkEmail": "Check your email",
+    "resetEmailSent": "We've sent a password reset link to {{email}}",
+    "signUpTitle": "Can we get your informations please?",
+    "signUpSubtitle": "We only use your information to make sure everyone in Spooned is real.",
+    "emailAddress": "Email address*",
+    "phoneNumber": "Phone Number *",
+    "letsSetupButton": "Lets setup you up!",
+    "settingUp": "Setting up...",
+    "privacyNotice": "We never share this anyone and it won't be on your profile!",
+    "validation": {
+      "emailRequired": "Please enter your email address",
+      "emailInvalid": "Please enter a valid email address",
+      "passwordRequired": "Please enter your password",
+      "phoneRequired": "Please enter your phone number"
+    },
+    "errors": {
+      "unexpected": "An unexpected error occurred. Please try again.",
+      "invalidCredentials": "Invalid email or password"
+    }
+  },
+  "modal": {
+    "welcomeMessage": "Welcome Message",
+    "welcomeDescription": "Lipsum generator: Lorem Ipsum - All the facts\nLipsum generator: Lorem Ipsum - All the facts",
+    "continue": "Continue"
+  },
+  "main": {
+    "home": "Home",
+    "welcome": "Welcome to Spooned!"
+  },
+  "onboarding": {
+    "title": "Welcome to Spooned!",
+    "subtitle": "Find your perfect match and spoon your way to love",
+    "getStarted": "Get Started"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "selectLanguage": "Select Language"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "ok": "OK",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "next": "Next",
+    "previous": "Previous",
+    "done": "Done"
+  }
+}
