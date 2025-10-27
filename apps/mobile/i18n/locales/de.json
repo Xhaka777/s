@@ -1,0 +1,79 @@
+{
+  "welcome": {
+    "tagline": "Löffle dich zur Liebe!",
+    "signIn": "Anmelden",
+    "createAccount": "Konto erstellen",
+    "terms": "Mit der Anmeldung stimmst du unseren {{terms}} zu.",
+    "termsLink": "Nutzungsbedingungen",
+    "privacyPolicy": "Erfahre, wie wir deine Daten in unserer {{privacyPolicy}} verwenden",
+    "privacyPolicyLink": "Datenschutzerklärung",
+    "languageSelector": "Sprache"
+  },
+  "auth": {
+    "welcomeBack": "Willkommen zurück",
+    "signInSubtitle": "Melde dich an, um fortzufahren",
+    "email": "E-Mail",
+    "emailPlaceholder": "deine@email.com",
+    "password": "Passwort",
+    "passwordPlaceholder": "Passwort eingeben",
+    "forgotPassword": "Passwort vergessen?",
+    "signInButton": "Anmelden",
+    "noAccount": "Noch kein Konto? ",
+    "signUpLink": "Registrieren",
+    "resetPassword": "Passwort zurücksetzen",
+    "resetPasswordSubtitle": "Gib deine E-Mail ein und wir senden dir einen Link zum Zurücksetzen deines Passworts",
+    "sendResetLink": "Reset-Link senden",
+    "backToSignIn": "Zurück zur Anmeldung",
+    "checkEmail": "E-Mail prüfen",
+    "resetEmailSent": "Wir haben einen Passwort-Reset-Link an {{email}} gesendet",
+    "signUpTitle": "Können wir deine Informationen bekommen?",
+    "signUpSubtitle": "Wir verwenden deine Informationen nur, um sicherzustellen, dass alle bei Spooned echt sind.",
+    "emailAddress": "E-Mail-Adresse*",
+    "phoneNumber": "Telefonnummer *",
+    "letsSetupButton": "Lass uns dich einrichten!",
+    "settingUp": "Einrichtung...",
+    "privacyNotice": "Wir teilen das niemals mit jemandem und es wird nicht in deinem Profil stehen!",
+    "validation": {
+      "emailRequired": "Bitte gib deine E-Mail-Adresse ein",
+      "emailInvalid": "Bitte gib eine gültige E-Mail-Adresse ein",
+      "passwordRequired": "Bitte gib dein Passwort ein",
+      "phoneRequired": "Bitte gib deine Telefonnummer ein"
+    },
+    "errors": {
+      "unexpected": "Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.",
+      "invalidCredentials": "Ungültige E-Mail oder Passwort"
+    }
+  },
+  "modal": {
+    "welcomeMessage": "Willkommensnachricht",
+    "welcomeDescription": "Lipsum-Generator: Lorem Ipsum - Alle Fakten\nLipsum-Generator: Lorem Ipsum - Alle Fakten",
+    "continue": "Weiter"
+  },
+  "main": {
+    "home": "Startseite",
+    "welcome": "Willkommen bei Spooned!"
+  },
+  "onboarding": {
+    "title": "Willkommen bei Spooned!",
+    "subtitle": "Finde deinen perfekten Partner und löffle dich zur Liebe",
+    "getStarted": "Loslegen"
+  },
+  "language": {
+    "english": "English",
+    "german": "Deutsch",
+    "selectLanguage": "Sprache auswählen"
+  },
+  "common": {
+    "loading": "Lädt...",
+    "error": "Fehler",
+    "ok": "OK",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "delete": "Löschen",
+    "edit": "Bearbeiten",
+    "close": "Schließen",
+    "next": "Weiter",
+    "previous": "Zurück",
+    "done": "Fertig"
+  }
+}
