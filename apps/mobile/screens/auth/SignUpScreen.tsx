@@ -22,7 +22,6 @@ import Union from '../../components/svg/Union';
 import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { SuccessModal } from '../../components';
 
 // Debug utilities
 const debugFirebaseSetup = () => {
@@ -94,7 +93,7 @@ const COUNTRY_CODES = [
 const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; remainingNumber: string; detected: boolean } => {
   // Remove spaces, dashes, parentheses but keep + and digits
   let cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-
+  
   // If it doesn't start with +, treat as regular phone number
   if (!cleanNumber.startsWith('+')) {
     return { countryCode: '', remainingNumber: cleanNumber, detected: false };
@@ -102,11 +101,11 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
 
   // Sort by length (longest first) to avoid conflicts (+383 before +38)
   const sortedCodes = [...SMART_DETECTION_COUNTRIES].sort((a, b) => b.code.length - a.code.length);
-
+  
   for (const country of sortedCodes) {
     if (cleanNumber.startsWith(country.code)) {
       const remaining = cleanNumber.substring(country.code.length);
-
+      
       console.log(`🔍 Checking ${country.country} (${country.code}):`, {
         input: cleanNumber,
         remaining: remaining,
@@ -114,7 +113,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
         minLength: country.minLength,
         maxLength: country.maxLength
       });
-
+      
       // Only auto-detect if we have enough digits for validation
       if (remaining.length >= 6) { // At least 6 digits to attempt detection
         // Check if remaining number length makes sense for this country
@@ -129,7 +128,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
       }
     }
   }
-
+  
   console.log('❌ No priority country detected');
   return { countryCode: '', remainingNumber: cleanNumber, detected: false };
 };
@@ -148,7 +147,6 @@ export default function SignUpScreen() {
   const [confirm, setConfirm] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'info' | 'verification'>('info');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // OTP Input states
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -269,224 +267,123 @@ export default function SignUpScreen() {
     return true;
   };
 
-  const handlePhoneNumberChange = (text: string) => {
-    console.log('📱 Phone input changed:', text);
-
-    // Allow + character and digits, remove other characters
-    const allowedChars = text.replace(/[^\d+]/g, '');
-
-    // If the text starts with + and has sufficient digits, try priority country detection
-    if (allowedChars.startsWith('+') && allowedChars.length >= 9) { // At least +X plus 6 digits
-      const detection = detectPriorityCountryCode(allowedChars);
-
-      console.log('🎯 Priority country detection result:', {
-        input: allowedChars,
-        detected: detection.detected,
-        countryCode: detection.countryCode,
-        remainingNumber: detection.remainingNumber
-      });
-
-      // Only apply auto-detection if we found a priority country
-      if (detection.detected && detection.countryCode) {
-        console.log(`🎉 Auto-detected priority country: ${detection.countryCode}`);
-        setCountryCode(detection.countryCode);
-        setPhoneNumber(detection.remainingNumber);
-        return; // Exit early, don't set the full text
-      }
+const handlePhoneNumberChange = (text: string) => {
+  console.log('📱 Phone input changed:', text);
+  
+  // Allow + character and digits, remove other characters
+  const allowedChars = text.replace(/[^\d+]/g, '');
+  
+  // If the text starts with + and has sufficient digits, try priority country detection
+  if (allowedChars.startsWith('+') && allowedChars.length >= 8) {
+    const { countryCode: detectedCode, remainingNumber, detected } = detectPriorityCountryCode(allowedChars);
+    
+    if (detected) {
+      console.log('🎯 Auto-setting country code and phone number');
+      setCountryCode(detectedCode);
+      setPhoneNumber(remainingNumber);
+      return;
     }
-
-    // Normal phone number input handling (no auto-detection)
+  }
+  
+  // If no + or doesn't start with +, treat as phone number input
+  if (!allowedChars.startsWith('+')) {
     setPhoneNumber(allowedChars);
-    console.log('📝 Phone number set to:', allowedChars);
-  };
+  } else {
+    // If starts with + but no country detected, keep as is in phone field
+    setPhoneNumber(allowedChars);
+  }
+};
 
-  // Enhanced country code input handler
-  const handleCountryCodeChange = (text: string) => {
-    // Ensure it starts with + and only contains digits after that
-    let cleanText = text;
-    if (!cleanText.startsWith('+')) {
-      cleanText = '+' + cleanText.replace(/[^\d]/g, '');
-    } else {
-      cleanText = '+' + cleanText.substring(1).replace(/[^\d]/g, '');
-    }
-
-    // Limit length to reasonable country code length (+1 to +9999)
-    if (cleanText.length <= 5) {
-      setCountryCode(cleanText);
-    }
-  };
-
-  const handleSendVerification = async () => {
+  const handleSendVerificationCode = async () => {
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
-    setError('');
-
     try {
-      const fullPhoneNumber = debugPhoneNumber(countryCode, phoneNumber);
+      setLoading(true);
+      setError('');
 
-      console.log('🔍 === PHONE VERIFICATION DEBUG ===');
-      console.log('📱 Country Code:', countryCode);
-      console.log('📞 Phone Number (input):', phoneNumber);
-      console.log('🌍 Full Phone Number:', fullPhoneNumber);
-      console.log('✅ E.164 Valid:', validatePhoneNumber(fullPhoneNumber));
-      console.log('📏 Length:', fullPhoneNumber.length);
-      console.log('🔢 Pattern Check:', /^\+[1-9]\d{1,14}$/.test(fullPhoneNumber));
+      const fullPhoneNumber = formatPhoneNumber(countryCode, phoneNumber);
+      console.log('📞 === ATTEMPTING PHONE VERIFICATION ===');
+      console.log('🌍 Full phone number:', fullPhoneNumber);
+      
+      // Debug the formatted phone number
+      debugPhoneNumber(countryCode, phoneNumber);
 
-      if (!validatePhoneNumber(fullPhoneNumber)) {
-        throw new Error('Invalid phone number format before sending');
-      }
-
-      console.log('📡 Attempting to send SMS to:', fullPhoneNumber);
-      console.log('🔥 Firebase Auth Instance:', getAuth().app.name);
-
-      const authInstance = getAuth();
-      const confirmation = await signInWithPhoneNumber(authInstance, fullPhoneNumber);
-
+      // Create confirmation result
+      const confirmation = await signInWithPhoneNumber(getAuth(), fullPhoneNumber);
+      
       console.log('✅ === SMS SENT SUCCESSFULLY ===');
-      console.log('📨 Confirmation Object:', confirmation);
-      console.log('🆔 Verification ID:', confirmation.verificationId);
-      console.log('📱 Phone Number in Confirmation:', fullPhoneNumber);
-      console.log('⏰ SMS should arrive within 1-2 minutes');
-      console.log('📞 Check your phone:', fullPhoneNumber);
+      console.log('📱 Confirmation result:', !!confirmation);
+      console.log('🔗 Verification ID:', confirmation.verificationId);
 
       setConfirm(confirmation);
       setStep('verification');
+      setOtpValues(['', '', '', '', '', '']); // Reset OTP values
+      setCurrentOtpIndex(0); // Reset current index
 
-      Alert.alert(
-        'Verification Code Sent! 📱',
-        `We've sent a verification code to ${fullPhoneNumber}\n\nCheck your SMS messages.\nCode should arrive within 1-2 minutes.`,
-        [{ text: 'OK' }]
-      );
-    } catch (err: any) {
+    } catch (error: any) {
       console.error('❌ === PHONE VERIFICATION ERROR ===');
-      console.error('Error code:', err.code);
-      console.error('Error message:', err.message);
-      console.error('Full error:', err);
+      console.error('Error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
 
-      // More specific error handling
-      if (err.code === 'auth/invalid-phone-number') {
-        setError(`Invalid phone number format: ${formatPhoneNumber(countryCode, phoneNumber)}`);
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many requests. Please wait before trying again.');
-      } else if (err.code === 'auth/quota-exceeded') {
-        setError('SMS quota exceeded. Please try again tomorrow.');
-      } else if (err.code === 'auth/app-not-authorized') {
-        setError('App not authorized. Check Firebase configuration.');
-      } else if (err.code === 'auth/missing-app-credential') {
-        setError('Missing app credentials. Check Firebase setup.');
-      } else if (err.code === 'auth/captcha-check-failed') {
-        setError('Captcha verification failed. Please try again.');
-      } else if (err.code === 'auth/web-storage-unsupported') {
-        setError('Web storage not supported. Please enable cookies.');
-      } else {
-        setError(`SMS failed: ${err.code || err.message}. Check console for details.`);
+      let errorMessage = 'Failed to send verification code. Please try again.';
+      
+      switch (error.code) {
+        case 'auth/invalid-phone-number':
+          errorMessage = 'Invalid phone number format. Please check your number.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please try again later.';
+          break;
+        case 'auth/quota-exceeded':
+          errorMessage = 'SMS quota exceeded. Please try again later.';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This phone number has been disabled.';
+          break;
+        default:
+          if (error.message) {
+            errorMessage = error.message;
+          }
       }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!verificationCode.trim()) {
-      setError('Please enter the verification code');
-      return;
-    }
-
-    if (!confirm) {
-      setError('No verification session found. Please try again');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('🔐 === CODE VERIFICATION DEBUG ===');
-      console.log('📝 Entered Code:', verificationCode);
-      console.log('📏 Code Length:', verificationCode.length);
-      console.log('🆔 Verification ID:', confirm.verificationId);
-      console.log('⏱️ Attempting verification...');
-
-      const result = await confirm.confirm(verificationCode);
-
-      console.log('✅ === CODE VERIFICATION SUCCESS ===');
-      console.log('🎉 Verification Result:', result);
-      console.log('👤 User Object:', result.user);
-      console.log('📱 Verified Phone:', result.user.phoneNumber);
-      console.log('🆔 User UID:', result.user.uid);
-
-    } catch (err: any) {
-      console.error('❌ === CODE VERIFICATION ERROR ===');
-      console.error('Error code:', err.code);
-      console.error('Error message:', err.message);
-      console.error('Full error:', err);
-      console.log('🔄 Verification ID used:', confirm.verificationId);
-      console.log('📝 Code entered:', verificationCode);
-
-      if (err.code === 'auth/invalid-verification-code') {
-        setError(`Invalid verification code: "${verificationCode}". Please check and try again.`);
-      } else if (err.code === 'auth/code-expired') {
-        setError('Verification code expired. Please request a new one.');
-        setStep('info');
-        setConfirm(null);
-        setVerificationCode('');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many verification attempts. Please try again later.');
-      } else {
-        setError(`Verification failed: ${err.code || err.message}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-
-    setOtpValues(['', '', '', '', '', '']); // Reset OTP values
-    setCurrentOtpIndex(0); // Reset current index
-  };
-
-  const handleResendCode = async () => {
-    setStep('info');
-    setConfirm(null);
-    setVerificationCode('');
-    setError('');
-    setOtpValues(['', '', '', '', '', '']);
-    setCurrentOtpIndex(0);
-    await handleSendVerification();
-  };
-
-  const selectCountryCode = (code: string) => {
-    setCountryCode(code);
-    setShowCountryPicker(false);
-    setError('');
   };
 
   // OTP Input handlers
   const handleOtpChange = (value: string, index: number) => {
+    // Only allow single digit
+    if (value.length > 1) {
+      value = value.slice(-1);
+    }
+
+    // Only allow numbers
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
     const newOtpValues = [...otpValues];
     newOtpValues[index] = value;
     setOtpValues(newOtpValues);
 
-    // Move to next input if value is entered and not the last input
-    if (value && index < otpValues.length - 1) {
-      const nextInput = otpRefs.current[index + 1];
-      if (nextInput) {
-        nextInput.focus();
-      }
+    // Auto focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+      setCurrentOtpIndex(index + 1);
     }
 
-    // Check if OTP is complete and equals "222222"
-    const completeOtp = newOtpValues.join('');
-    if (completeOtp.length === 6) {
-      if (completeOtp === '222222') {
-        // Show success modal for test OTP
-        setShowSuccessModal(true);
-      } else {
-        // For real implementation, you would verify with Firebase here
-        // For now, we'll just show an error
-        setError('Invalid verification code. Use 222222 for testing.');
-      }
+    // Update verification code
+    const otpString = newOtpValues.join('');
+    setVerificationCode(otpString);
+
+    // Auto verify if all 6 digits are entered
+    if (otpString.length === 6) {
+      handleVerifyCode(otpString);
     }
   };
 
@@ -496,7 +393,7 @@ export default function SignUpScreen() {
         // If current input is empty and backspace is pressed, focus previous input
         otpRefs.current[index - 1]?.focus();
         setCurrentOtpIndex(index - 1);
-
+        
         // Clear the previous input
         const newOtpValues = [...otpValues];
         newOtpValues[index - 1] = '';
@@ -510,137 +407,75 @@ export default function SignUpScreen() {
     setCurrentOtpIndex(index);
   };
 
-  const renderCountryPicker = () => (
-    <Modal
-      visible={showCountryPicker}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowCountryPicker(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Country Code</Text>
-            <TouchableOpacity
-              onPress={() => setShowCountryPicker(false)}
-              style={styles.modalClose}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={COUNTRY_CODES}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.countryItem}
-                onPress={() => selectCountryCode(item.code)}
-              >
-                <Text style={styles.countryFlag}>{item.flag}</Text>
-                <Text style={styles.countryCode}>{item.code}</Text>
-                <Text style={styles.countryName}>{item.country}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
+  const handleVerifyCode = async (code?: string) => {
+    const codeToVerify = code || verificationCode;
+    
+    if (!codeToVerify || codeToVerify.length !== 6) {
+      setError('Please enter the complete 6-digit verification code');
+      return;
+    }
 
-  const renderInfoStep = () => (
-    <>
-      <View style={styles.content}>
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>Can we get your information please?</Text>
-          <Text style={styles.subtitle}>
-            We only use your information to make sure everyone in Spooned is real.
-          </Text>
-        </View>
+    if (!confirm) {
+      setError('No verification session found. Please request a new code.');
+      return;
+    }
 
-        <View style={styles.formSection}>
-          {/* Email input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email address*</Text>
-            <View style={[styles.inputWrapper, email.length > 0 && styles.inputWrapperActive]}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="your@email.com"
-                placeholderTextColor="#666666"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setError('');
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!loading}
-              />
-            </View>
-          </View>
+    try {
+      setLoading(true);
+      setError('');
 
-          {/* Phone number input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number *</Text>
-            <View style={styles.phoneInputContainer}>
-              {/* Country code picker */}
-              <View style={styles.countryCodeWrapper}>
-                <TextInput
-                  style={styles.countryCodeText}
-                  value={countryCode}
-                  onChangeText={handleCountryCodeChange}
-                  placeholder="+1"
-                  placeholderTextColor="#666666"
-                  keyboardType="phone-pad"
-                  maxLength={5}
-                  editable={!loading}
-                />
-              </View>
+      console.log('🔐 === VERIFYING CODE ===');
+      console.log('📟 Code to verify:', codeToVerify);
+      console.log('🔗 Confirmation object:', !!confirm);
 
-              {/* Phone number input */}
-              <View style={styles.phoneNumberWrapper}>
-                <TextInput
-                  style={styles.phoneNumberInput}
-                  placeholder="Your phone number"
-                  placeholderTextColor="#666666"
-                  value={phoneNumber}
-                  onChangeText={handlePhoneNumberChange}
-                  keyboardType="phone-pad"
-                  editable={!loading}
-                />
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
+      const credential = await confirm.confirm(codeToVerify);
+      
+      console.log('🎉 === VERIFICATION SUCCESS ===');
+      console.log('✅ User credential:', !!credential);
+      console.log('👤 User:', credential.user?.uid);
+      console.log('📱 Phone number verified:', credential.user?.phoneNumber);
 
-      <View style={styles.bottomSection}>
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
+      // The onAuthStateChanged listener will handle the rest
 
-        <TouchableOpacity
-          style={[styles.continueButton, loading && styles.continueButtonDisabled]}
-          onPress={handleSendVerification}
-          disabled={loading || !email || !phoneNumber}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.continueButtonText}>
-            {loading ? 'Sending code...' : 'Send Verification Code'}
-          </Text>
-        </TouchableOpacity>
+    } catch (error: any) {
+      console.error('❌ === CODE VERIFICATION ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
 
-        <View style={styles.privacyNotice}>
-          <Shield size={24} color="#FFFFFF" />
-          <Text style={styles.privacyText}>
-            We never share this with anyone and it won't be on your profile!
-          </Text>
-        </View>
-      </View>
-    </>
-  );
+      let errorMessage = 'Invalid verification code. Please try again.';
+      
+      switch (error.code) {
+        case 'auth/invalid-verification-code':
+          errorMessage = 'Invalid verification code. Please check and try again.';
+          break;
+        case 'auth/code-expired':
+          errorMessage = 'Verification code has expired. Please request a new one.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        default:
+          if (error.message) {
+            errorMessage = error.message;
+          }
+      }
+      
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    // Reset to info step and resend
+    setStep('info');
+    setConfirm(null);
+    setVerificationCode('');
+    setOtpValues(['', '', '', '', '', '']);
+    setCurrentOtpIndex(0);
+    await handleSendVerificationCode();
+  };
 
   const renderOtpInputs = () => {
     return (
@@ -675,6 +510,87 @@ export default function SignUpScreen() {
     );
   };
 
+  const renderInfoStep = () => (
+    <View style={styles.content}>
+      <View style={styles.titleSection}>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>
+          Enter your email and phone number to get started with Spooned
+        </Text>
+      </View>
+
+      <View style={styles.formSection}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Email Address</Text>
+          <View style={styles.inputWrapper}>
+            <TextInput
+              style={styles.textInput}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor="#666666"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Phone Number</Text>
+          <View style={styles.phoneInputContainer}>
+            <TouchableOpacity
+              style={styles.countryCodeWrapper}
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text style={styles.countryCodeText}>{countryCode}</Text>
+              <ChevronDown size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View style={styles.phoneNumberWrapper}>
+              <TextInput
+                style={styles.phoneNumberInput}
+                value={phoneNumber}
+                onChangeText={handlePhoneNumberChange}
+                placeholder="Phone number"
+                placeholderTextColor="#666666"
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.bottomSection}>
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            (loading || !email.trim() || !phoneNumber.trim()) && styles.continueButtonDisabled
+          ]}
+          onPress={handleSendVerificationCode}
+          disabled={loading || !email.trim() || !phoneNumber.trim()}
+        >
+          <Text style={styles.continueButtonText}>
+            {loading ? 'Sending Code...' : 'Send Verification Code'}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.privacyNotice}>
+          <Shield size={16} color="#FFFFFF" />
+          <Text style={styles.privacyText}>
+            We'll send you a verification code to confirm your phone number. 
+            Standard messaging rates may apply.
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
   const renderVerificationStep = () => (
     <View style={styles.content}>
       <View style={styles.titleSection}>
@@ -693,6 +609,25 @@ export default function SignUpScreen() {
       </View>
 
       <View style={styles.bottomSection}>
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          style={[
+            styles.continueButton,
+            (loading || verificationCode.length !== 6) && styles.continueButtonDisabled
+          ]}
+          onPress={() => handleVerifyCode()}
+          disabled={loading || verificationCode.length !== 6}
+        >
+          <Text style={styles.continueButtonText}>
+            {loading ? 'Verifying...' : 'Verify Code'}
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.resendSection}>
           <Text style={styles.resendText}>
             Didn't Get OTP?{' '}
@@ -705,22 +640,59 @@ export default function SignUpScreen() {
     </View>
   );
 
+  const renderCountryPicker = () => (
+    <Modal
+      visible={showCountryPicker}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowCountryPicker(false)}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Select Country</Text>
+            <TouchableOpacity
+              style={styles.modalClose}
+              onPress={() => setShowCountryPicker(false)}
+            >
+              <Text style={styles.modalCloseText}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={COUNTRY_CODES}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={styles.countryItem}
+                onPress={() => {
+                  setCountryCode(item.code);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <Text style={styles.countryFlag}>{item.flag}</Text>
+                <Text style={styles.countryCode}>{item.code}</Text>
+                <Text style={styles.countryName}>{item.country}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
-
-      <Svg height="50%" width="100%" style={styles.gradient}>
+      
+      {/* Background Elements */}
+      <Svg style={styles.gradient} width="100%" height="100%">
         <Defs>
-          <RadialGradient
-            id="pinkGlow"
-            cx="0%" cy="10%" r="90%"
-            gradientUnits="userSpaceOnUse"
-          >
-            <Stop offset="0%" stopColor="#ff3c8c" stopOpacity="0.5" />
-            <Stop offset="100%" stopColor="#000" stopOpacity="0" />
+          <RadialGradient id="grad" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#000000" stopOpacity="1" />
+            <Stop offset="100%" stopColor="#000000" stopOpacity="1" />
           </RadialGradient>
         </Defs>
-        <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
+        <Rect width="100%" height="100%" fill="url(#grad)" />
       </Svg>
 
       <View style={styles.unionContainer}>
@@ -728,36 +700,25 @@ export default function SignUpScreen() {
       </View>
 
       <View style={styles.glowContainer}>
-        <GlowBackground width={242} height={218} />
+        <GlowBackground />
       </View>
 
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <TouchableOpacity
-            onPress={() => {
-              if (step === 'verification') {
-                setStep('info');
-                setConfirm(null);
-                setVerificationCode('');
-                setError('');
-              } else {
-                navigation.goBack();
-              }
-            }}
+          <TouchableOpacity 
             style={styles.backButton}
-            activeOpacity={0.7}
+            onPress={() => navigation.goBack()}
           >
-            <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
+            <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView
+        <KeyboardAvoidingView 
           style={styles.keyboardView}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <ScrollView
+          <ScrollView 
             contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
             {step === 'info' ? renderInfoStep() : renderVerificationStep()}
@@ -766,15 +727,6 @@ export default function SignUpScreen() {
       </SafeAreaView>
 
       {renderCountryPicker()}
-
-      <SuccessModal
-        visible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        onContinue={() => {
-          setShowSuccessModal(false);
-          navigation.navigate('ProfileSetupScreen');
-        }}
-      />
     </View>
   );
 }
@@ -846,6 +798,16 @@ const styles = StyleSheet.create({
     color: '#999999',
     lineHeight: 22,
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 8,
+  },
+  subtitleGray: {
+    fontSize: 16,
+    color: '#999999',
+    lineHeight: 22,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  emailHighlight: {
+    color: '#FFFFFF',
   },
   formSection: {
     gap: 16,
@@ -918,6 +880,52 @@ const styles = StyleSheet.create({
     height: '100%',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
   },
+  // OTP Input Styles
+  otpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 0,
+  },
+  otpInputWrapper: {
+    position: 'relative',
+    width: 48,
+    height: 48,
+  },
+  otpInput: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 0.5,
+    borderColor: '#FFFFFF',
+    borderBottomWidth: 3,
+    backgroundColor: '#000000',
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    textAlign: 'center',
+    paddingTop: 0,
+    paddingBottom: 0,
+  },
+  otpInputActive: {
+    borderBottomColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  otpInputFilled: {
+    borderBottomColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  cursor: {
+    position: 'absolute',
+    left: '50%',
+    top: '50%',
+    width: 1,
+    height: 16,
+    backgroundColor: '#FFFFFF',
+    marginLeft: -0.5,
+    marginTop: -8,
+  },
   bottomSection: {
     paddingTop: 40,
     paddingBottom: 64,
@@ -955,6 +963,19 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FFFFFF',
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  resendSection: {
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  resendText: {
+    fontSize: 14,
+    color: '#FFFFFF',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  resendLink: {
+    color: '#B8457B',
+    fontWeight: '600',
   },
   resendButton: {
     height: 48,
@@ -1036,74 +1057,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#999',
     flex: 1,
-  },
-  // Add these to your StyleSheet.create():
-  subtitleGray: {
-    fontSize: 16,
-    color: '#999999',
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  emailHighlight: {
-    color: '#FFFFFF',
-  },
-  // OTP Input Styles
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 0,
-  },
-  otpInputWrapper: {
-    position: 'relative',
-    width: 48,
-    height: 48,
-  },
-  otpInput: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    backgroundColor: '#000000',
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    textAlign: 'center',
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-  otpInputActive: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  otpInputFilled: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  cursor: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 1,
-    height: 16,
-    backgroundColor: '#FFFFFF',
-    marginLeft: -0.5,
-    marginTop: -8,
-  },
-  resendSection: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  resendText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  resendLink: {
-    color: '#B8457B',
-    fontWeight: '600',
   },
 });

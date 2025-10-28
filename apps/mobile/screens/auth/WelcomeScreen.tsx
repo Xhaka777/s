@@ -138,7 +138,7 @@ export default function WelcomeScreen() {
 
             <TouchableOpacity
               className="bg-white rounded-full py-4.5 items-center justify-center shadow-lg"
-              onPress={() => navigation.navigate('ProfileSetup')}
+              onPress={() => navigation.navigate('SignUp')}
               activeOpacity={0.8}
             >
               <Text className="text-[#1A1A1A] text-lg font-semibold tracking-wider">
