@@ -9,7 +9,21 @@ module.exports = {
   ],
   presets: [require('nativewind/preset')],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        // Poppins font family variants
+        'Poppins': ['Poppins-Regular'],
+        'PoppinsLight': ['Poppins-Light'],
+        'PoppinsMedium': ['Poppins-Medium'],
+        'PoppinsSemiBold': ['Poppins-SemiBold'],
+        'PoppinsBold': ['Poppins-Bold'],
+      },
+      colors: {
+        // Your custom colors
+        primary: '#99225E',
+        secondary: '#B8457B',
+      }
+    },
   },
   plugins: [],
 }

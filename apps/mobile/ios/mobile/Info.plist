@@ -26,6 +26,23 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>UIAppFonts</key>
+<array>
+    <string>Poppins-Regular.ttf</string>
+    <string>Poppins-Medium.ttf</string>
+    <string>Poppins-SemiBold.ttf</string>
+    <string>Poppins-Bold.ttf</string>
+    <string>Poppins-Light.ttf</string>
+</array>
+	<!-- ADD THESE FOR VERIFF -->
+	<key>NSCameraUsageDescription</key>
+	<string>We need camera access to verify your identity and keep our dating community safe</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Microphone access helps us verify you're a real person to maintain a secure dating environment</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Access your photos to upload an existing clear image of your ID for easier verification</string>
+	<!-- END VERIFF ADDITIONS -->
+	
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>

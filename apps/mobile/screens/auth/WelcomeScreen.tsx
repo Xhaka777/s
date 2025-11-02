@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import WelcomeModal from '../../components/WelcomeModal';
+import { Button } from '../../components';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Globe } from 'lucide-react-native';
 
@@ -55,7 +56,7 @@ export default function WelcomeScreen() {
 
   const handleTermsPress = () => {
     // Navigate to Terms and Conditions screen
-        navigation.navigate('TermsAndConditions');
+    navigation.navigate('TermsAndConditions');
     console.log('Terms pressed');
   };
 
@@ -77,12 +78,12 @@ export default function WelcomeScreen() {
         <View className="absolute inset-0 bg-black/30" />
 
         {/* Language Button */}
-        <TouchableOpacity 
+        <TouchableOpacity
           className="absolute z-10 bg-black/30 border border-white/30 rounded-full flex-row items-center justify-between px-5 py-3"
           style={{
             top: 60,
             left: width * 0.5 - 75,
-            width: 150,
+            width: 120,
             height: 50,
           }}
           onPress={handleLanguagePress}
@@ -93,23 +94,25 @@ export default function WelcomeScreen() {
             <View className="w-6 h-6 items-center justify-center">
               <Globe size={20} color="#FFFFFF" />
             </View>
-            <Text className="text-white text-lg font-medium">
+            <Text className="text-white text-lg font-PoppinsMedium">
               {displayLanguage}
             </Text>
-          </View>
-          {/* Chevron Right */}
-          <View className="w-5 h-5 items-center justify-center">
             <Text className="text-white text-xl font-light">›</Text>
+            {/* Chevron Right */}
           </View>
+          {/* <View className="w-6 h-6 items-center justify-center"> */}
+          {/* </View> */}
         </TouchableOpacity>
 
-        <View 
+        {/* Main Content */}
+        <View
           className="flex-1 justify-between px-6"
           style={{
             paddingTop: height * 0.45,
             paddingBottom: 60,
           }}
         >
+          {/* Logo Section */}
           <View className="items-center mb-10">
             <Image
               source={require('../../assets/images/spooned.png')}
@@ -120,45 +123,56 @@ export default function WelcomeScreen() {
               }}
               resizeMode="contain"
             />
-            <Text className="text-xl font-normal text-white text-center tracking-wider">
+            <Text className="text-xl font-Poppins text-white text-center tracking-wider">
               {t('welcome.tagline')}
             </Text>
           </View>
 
+          {/* Button Section */}
           <View className="w-full gap-4">
-            <TouchableOpacity
-              className="bg-[#B8457B] rounded-full py-4.5 items-center justify-center shadow-lg"
+            {/* Sign In Button */}
+            <Button
+              title={t('welcome.signIn')}
               onPress={handleSignIn}
-              activeOpacity={0.8}
-            >
-              <Text className="text-white text-lg font-semibold tracking-wider">
-                {t('welcome.signIn')}
-              </Text>
-            </TouchableOpacity>
+              variant="primary"
+              style={{
+                shadowColor: '#B8457B',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            />
 
-            <TouchableOpacity
-              className="bg-white rounded-full py-4.5 items-center justify-center shadow-lg"
-              onPress={() => navigation.navigate('SignUp')}
-              activeOpacity={0.8}
-            >
-              <Text className="text-[#1A1A1A] text-lg font-semibold tracking-wider">
-                {t('welcome.createAccount')}
-              </Text>
-            </TouchableOpacity>
+            {/* Create Account Button */}
+            <Button
+              title={t('welcome.createAccount')}
+              onPress={() => navigation.navigate('ProfileSetup')}
+              // onPress={() => navigation.navigate('SignUp')}
+              variant="secondary"
+              style={{
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.2,
+                shadowRadius: 8,
+                elevation: 8,
+              }}
+            />
 
+            {/* Terms and Privacy Section */}
             <View className="mt-2 items-center">
-              <Text className="text-xs text-white text-center leading-5">
+              <Text className="text-sm text-white text-center leading-5">
                 {t('welcome.terms', { terms: '' })}
                 <TouchableOpacity onPress={handleTermsPress} activeOpacity={0.8}>
-                  <Text className="font-semibold underline text-white">
+                  <Text className="font-PoppinsMedium underline text-white text-sm">
                     {t('welcome.termsLink')}
                   </Text>
                 </TouchableOpacity>
               </Text>
-              <Text className="text-xs text-white text-center leading-5">
+              <Text className="text-sm text-white text-center leading-5">
                 {t('welcome.privacyPolicy', { privacyPolicy: '' })}
                 <TouchableOpacity onPress={handlePrivacyPress} activeOpacity={0.8}>
-                  <Text className="font-semibold underline text-white">
+                  <Text className="font-PoppinsMedium underline text-white text-sm">
                     {t('welcome.privacyPolicyLink')}
                   </Text>
                 </TouchableOpacity>

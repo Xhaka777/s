@@ -13,6 +13,7 @@ import {
   Alert,
   Modal,
   FlatList,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Shield, ChevronDown } from 'lucide-react-native';
@@ -22,6 +23,7 @@ import Union from '../../components/svg/Union';
 import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
+import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
 
 // Debug utilities
 const debugFirebaseSetup = () => {
@@ -93,7 +95,7 @@ const COUNTRY_CODES = [
 const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; remainingNumber: string; detected: boolean } => {
   // Remove spaces, dashes, parentheses but keep + and digits
   let cleanNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
-  
+
   // If it doesn't start with +, treat as regular phone number
   if (!cleanNumber.startsWith('+')) {
     return { countryCode: '', remainingNumber: cleanNumber, detected: false };
@@ -101,11 +103,11 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
 
   // Sort by length (longest first) to avoid conflicts (+383 before +38)
   const sortedCodes = [...SMART_DETECTION_COUNTRIES].sort((a, b) => b.code.length - a.code.length);
-  
+
   for (const country of sortedCodes) {
     if (cleanNumber.startsWith(country.code)) {
       const remaining = cleanNumber.substring(country.code.length);
-      
+
       console.log(`🔍 Checking ${country.country} (${country.code}):`, {
         input: cleanNumber,
         remaining: remaining,
@@ -113,7 +115,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
         minLength: country.minLength,
         maxLength: country.maxLength
       });
-      
+
       // Only auto-detect if we have enough digits for validation
       if (remaining.length >= 6) { // At least 6 digits to attempt detection
         // Check if remaining number length makes sense for this country
@@ -128,7 +130,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
       }
     }
   }
-  
+
   console.log('❌ No priority country detected');
   return { countryCode: '', remainingNumber: cleanNumber, detected: false };
 };
@@ -142,6 +144,8 @@ export default function SignUpScreen() {
   const [showCountryPicker, setShowCountryPicker] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // Phone verification states
   const [confirm, setConfirm] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
@@ -204,20 +208,6 @@ export default function SignUpScreen() {
         } catch (error) {
           console.error('❌ Error getting ID token:', error);
         }
-
-        Alert.alert(
-          'Welcome to Spooned!',
-          `Your phone number has been verified successfully.\n\nUID: ${user.uid}\nPhone: ${user.phoneNumber}`,
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                // navigation.navigate('Main'); // Uncomment when ready
-                console.log('🚀 Ready to navigate to main app');
-              }
-            }
-          ]
-        );
       } else {
         console.log('👤 No user signed in');
       }
@@ -267,32 +257,32 @@ export default function SignUpScreen() {
     return true;
   };
 
-const handlePhoneNumberChange = (text: string) => {
-  console.log('📱 Phone input changed:', text);
-  
-  // Allow + character and digits, remove other characters
-  const allowedChars = text.replace(/[^\d+]/g, '');
-  
-  // If the text starts with + and has sufficient digits, try priority country detection
-  if (allowedChars.startsWith('+') && allowedChars.length >= 8) {
-    const { countryCode: detectedCode, remainingNumber, detected } = detectPriorityCountryCode(allowedChars);
-    
-    if (detected) {
-      console.log('🎯 Auto-setting country code and phone number');
-      setCountryCode(detectedCode);
-      setPhoneNumber(remainingNumber);
-      return;
+  const handlePhoneNumberChange = (text: string) => {
+    console.log('📱 Phone input changed:', text);
+
+    // Allow + character and digits, remove other characters
+    const allowedChars = text.replace(/[^\d+]/g, '');
+
+    // If the text starts with + and has sufficient digits, try priority country detection
+    if (allowedChars.startsWith('+') && allowedChars.length >= 8) {
+      const { countryCode: detectedCode, remainingNumber, detected } = detectPriorityCountryCode(allowedChars);
+
+      if (detected) {
+        console.log('🎯 Auto-setting country code and phone number');
+        setCountryCode(detectedCode);
+        setPhoneNumber(remainingNumber);
+        return;
+      }
     }
-  }
-  
-  // If no + or doesn't start with +, treat as phone number input
-  if (!allowedChars.startsWith('+')) {
-    setPhoneNumber(allowedChars);
-  } else {
-    // If starts with + but no country detected, keep as is in phone field
-    setPhoneNumber(allowedChars);
-  }
-};
+
+    // If no + or doesn't start with +, treat as phone number input
+    if (!allowedChars.startsWith('+')) {
+      setPhoneNumber(allowedChars);
+    } else {
+      // If starts with + but no country detected, keep as is in phone field
+      setPhoneNumber(allowedChars);
+    }
+  };
 
   const handleSendVerificationCode = async () => {
     if (!validateForm()) {
@@ -306,13 +296,13 @@ const handlePhoneNumberChange = (text: string) => {
       const fullPhoneNumber = formatPhoneNumber(countryCode, phoneNumber);
       console.log('📞 === ATTEMPTING PHONE VERIFICATION ===');
       console.log('🌍 Full phone number:', fullPhoneNumber);
-      
+
       // Debug the formatted phone number
       debugPhoneNumber(countryCode, phoneNumber);
 
       // Create confirmation result
       const confirmation = await signInWithPhoneNumber(getAuth(), fullPhoneNumber);
-      
+
       console.log('✅ === SMS SENT SUCCESSFULLY ===');
       console.log('📱 Confirmation result:', !!confirmation);
       console.log('🔗 Verification ID:', confirmation.verificationId);
@@ -329,7 +319,7 @@ const handlePhoneNumberChange = (text: string) => {
       console.error('Error message:', error.message);
 
       let errorMessage = 'Failed to send verification code. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/invalid-phone-number':
           errorMessage = 'Invalid phone number format. Please check your number.';
@@ -348,7 +338,7 @@ const handlePhoneNumberChange = (text: string) => {
             errorMessage = error.message;
           }
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -393,7 +383,7 @@ const handlePhoneNumberChange = (text: string) => {
         // If current input is empty and backspace is pressed, focus previous input
         otpRefs.current[index - 1]?.focus();
         setCurrentOtpIndex(index - 1);
-        
+
         // Clear the previous input
         const newOtpValues = [...otpValues];
         newOtpValues[index - 1] = '';
@@ -409,7 +399,7 @@ const handlePhoneNumberChange = (text: string) => {
 
   const handleVerifyCode = async (code?: string) => {
     const codeToVerify = code || verificationCode;
-    
+
     if (!codeToVerify || codeToVerify.length !== 6) {
       setError('Please enter the complete 6-digit verification code');
       return;
@@ -429,7 +419,7 @@ const handlePhoneNumberChange = (text: string) => {
       console.log('🔗 Confirmation object:', !!confirm);
 
       const credential = await confirm.confirm(codeToVerify);
-      
+
       console.log('🎉 === VERIFICATION SUCCESS ===');
       console.log('✅ User credential:', !!credential);
       console.log('👤 User:', credential.user?.uid);
@@ -437,6 +427,7 @@ const handlePhoneNumberChange = (text: string) => {
 
       // The onAuthStateChanged listener will handle the rest
 
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('❌ === CODE VERIFICATION ERROR ===');
       console.error('Error details:', error);
@@ -444,7 +435,7 @@ const handlePhoneNumberChange = (text: string) => {
       console.error('Error message:', error.message);
 
       let errorMessage = 'Invalid verification code. Please try again.';
-      
+
       switch (error.code) {
         case 'auth/invalid-verification-code':
           errorMessage = 'Invalid verification code. Please check and try again.';
@@ -460,11 +451,17 @@ const handlePhoneNumberChange = (text: string) => {
             errorMessage = error.message;
           }
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('ProfileSetup'); // Uncomment when ready to navigate
+    console.log('🚀 Ready to navigate to main app');
   };
 
   const handleResendCode = async () => {
@@ -479,18 +476,19 @@ const handlePhoneNumberChange = (text: string) => {
 
   const renderOtpInputs = () => {
     return (
-      <View style={styles.otpContainer}>
+      <View className="flex-row justify-between items-center my-5 px-0">
         {otpValues.map((value, index) => (
-          <View key={index} style={styles.otpInputWrapper}>
+          <View key={index} className="relative w-12 h-12">
             <TextInput
               ref={(ref) => {
                 otpRefs.current[index] = ref;
               }}
-              style={[
-                styles.otpInput,
-                currentOtpIndex === index && styles.otpInputActive,
-                value && styles.otpInputFilled
-              ]}
+              className="w-12 h-12 p-1 rounded-[100px] border-[#fff] border-l-[0.50px] border-r-[0.50px] border-t-[0.50px] border-b-[3px] bg-transparent text-white text-lg text-center"
+              style={{
+                borderWidth: 1,
+                borderColor: '#FFFFFF',
+                backgroundColor: 'transparent',
+              }}
               value={value}
               onChangeText={(text) => handleOtpChange(text, index)}
               onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
@@ -502,7 +500,7 @@ const handlePhoneNumberChange = (text: string) => {
               autoFocus={index === 0}
             />
             {currentOtpIndex === index && !value && (
-              <View style={styles.cursor} />
+              <View className="absolute left-1/2 top-1/2 w-0.5 h-4 bg-white -ml-0.5 -mt-2" />
             )}
           </View>
         ))}
@@ -511,20 +509,21 @@ const handlePhoneNumberChange = (text: string) => {
   };
 
   const renderInfoStep = () => (
-    <View style={styles.content}>
-      <View style={styles.titleSection}>
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>
+    <View className="flex-1">
+      <View className="mb-6">
+        <Text className="text-xl font-PoppinsBold text-white mb-2.5">Create Account</Text>
+        <Text className="text-base text-gray-400 leading-5 font-Poppins">
           Enter your email and phone number to get started with Spooned
         </Text>
       </View>
 
-      <View style={styles.formSection}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email Address</Text>
-          <View style={styles.inputWrapper}>
-            <TextInput
-              style={styles.textInput}
+      <View className="gap-4">
+        <View className="gap-4">
+          {/* <Text className="text-base font-medium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>Email Address</Text> */}
+          <View className="">
+            {/* <TextInput
+              className="text-sm text-white h-full"
+              style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}
               value={email}
               onChangeText={setEmail}
               placeholder="Enter your email"
@@ -532,23 +531,33 @@ const handlePhoneNumberChange = (text: string) => {
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+            /> */}
+            <Input
+              label="Enter your email"
+              required
+              value={email}
+              onChangeText={setEmail}
+              error={''}
+              autoCapitalize="words"
+              autoCorrect={false}
+              editable={!loading}
             />
           </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number</Text>
-          <View style={styles.phoneInputContainer}>
+        <View className="gap-4">
+          <Text className="text-base font-PoppinsMedium text-white">Phone Number*</Text>
+          <View className="flex-row gap-2.5">
             <TouchableOpacity
-              style={styles.countryCodeWrapper}
+              className="w-20 h-12 bg-transparent rounded-full border border-white opacity-70 flex-row items-center px-4 justify-between"
               onPress={() => setShowCountryPicker(true)}
             >
-              <Text style={styles.countryCodeText}>{countryCode}</Text>
+              <Text className="text-sm text-white font-Poppins">{countryCode}</Text>
               <ChevronDown size={16} color="#FFFFFF" />
             </TouchableOpacity>
-            <View style={styles.phoneNumberWrapper}>
+            <View className="flex-1 h-12 bg-transparent rounded-full border border-white opacity-70 px-4 justify-center">
               <TextInput
-                style={styles.phoneNumberInput}
+                className="text-sm text-white h-full font-Poppins"
                 value={phoneNumber}
                 onChangeText={handlePhoneNumberChange}
                 placeholder="Phone number"
@@ -560,30 +569,39 @@ const handlePhoneNumberChange = (text: string) => {
         </View>
       </View>
 
-      <View style={styles.bottomSection}>
+      <View className="pt-10 pb-16 gap-4">
         {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View className="bg-red-500/10 p-3 rounded-2 mb-2">
+            <Text className="text-red-300 text-sm text-center font-Poppins">{error}</Text>
           </View>
         ) : null}
 
         <TouchableOpacity
-          style={[
-            styles.continueButton,
-            (loading || !email.trim() || !phoneNumber.trim()) && styles.continueButtonDisabled
-          ]}
+          className={`h-14 bg-[#B8457B] rounded-full justify-center items-center ${(loading || !email.trim() || !phoneNumber.trim()) ? 'opacity-40' : ''
+            }`}
+          style={{
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
           onPress={handleSendVerificationCode}
           disabled={loading || !email.trim() || !phoneNumber.trim()}
         >
-          <Text style={styles.continueButtonText}>
+          <Text className="text-base font-PoppinsMedium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>
             {loading ? 'Sending Code...' : 'Send Verification Code'}
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.privacyNotice}>
-          <Shield size={16} color="#FFFFFF" />
-          <Text style={styles.privacyText}>
-            We'll send you a verification code to confirm your phone number. 
+        <View className="flex-row items-start gap-2 pt-2">
+          <Image
+            source={require('../../assets/icons/shield.png')}
+            className="w-[20px] h-[20px]"
+            resizeMode="contain"
+          />
+          <Text className="flex-1 text-sm text-white leading-4 font-Poppins">
+            We'll send you a verification code to confirm your phone number.
             Standard messaging rates may apply.
           </Text>
         </View>
@@ -592,46 +610,51 @@ const handlePhoneNumberChange = (text: string) => {
   );
 
   const renderVerificationStep = () => (
-    <View style={styles.content}>
-      <View style={styles.titleSection}>
-        <Text style={styles.title}>Verification Number</Text>
-        <Text style={styles.subtitle}>
+    <View className="flex-1">
+      <View className="mb-6">
+        <Text className="text-xl font-PoppinsMedium text-white mb-2.5">Verification Number</Text>
+        <Text className="text-base text-gray-400 leading-5 mb-2 font-Poppins">
           One Time Password (OTP) has been sent via Email to{' '}
-          <Text style={styles.emailHighlight}>{email}</Text>
+          <Text className="text-white font-Poppins">{email}</Text>
         </Text>
-        <Text style={styles.subtitleGray}>
+        <Text className="text-base text-gray-400 leading-5 font-Poppins">
           Enter the OTP below to verify it.
         </Text>
       </View>
 
-      <View style={styles.formSection}>
+      <View className="gap-4">
         {renderOtpInputs()}
       </View>
 
-      <View style={styles.bottomSection}>
+      <View className="pt-10 pb-16 gap-4">
         {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View className="bg-red-500/10 p-3 rounded-2 mb-2">
+            <Text className="text-red-300 text-sm text-center font-Poppins">{error}</Text>
           </View>
         ) : null}
 
         <TouchableOpacity
-          style={[
-            styles.continueButton,
-            (loading || verificationCode.length !== 6) && styles.continueButtonDisabled
-          ]}
+          className={`h-14 bg-[#B8457B] rounded-full justify-center items-center ${(loading || verificationCode.length !== 6) ? 'opacity-40' : ''
+            }`}
+          style={{
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
           onPress={() => handleVerifyCode()}
           disabled={loading || verificationCode.length !== 6}
         >
-          <Text style={styles.continueButtonText}>
+          <Text className="text-base font-PoppinsMedium text-white">
             {loading ? 'Verifying...' : 'Verify Code'}
           </Text>
         </TouchableOpacity>
 
-        <View style={styles.resendSection}>
-          <Text style={styles.resendText}>
+        <View className="items-center mt-2">
+          <Text className="text-sm text-white font-Poppins">
             Didn't Get OTP?{' '}
-            <Text style={styles.resendLink} onPress={handleResendCode}>
+            <Text className="text-[#B8457B] font-semibold" onPress={handleResendCode}>
               Resend in 0:23
             </Text>
           </Text>
@@ -647,15 +670,15 @@ const handlePhoneNumberChange = (text: string) => {
       transparent={true}
       onRequestClose={() => setShowCountryPicker(false)}
     >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Country</Text>
+      <View className="flex-1 bg-black/80 justify-end">
+        <View className="bg-[#1a1a1a] rounded-t-5 max-h-[70%]">
+          <View className="flex-row justify-between items-center p-5 border-b border-gray-700">
+            <Text className="text-lg font-PoppinsBold text-white">Select Country</Text>
             <TouchableOpacity
-              style={styles.modalClose}
+              className="w-7.5 h-7.5 justify-center items-center"
               onPress={() => setShowCountryPicker(false)}
             >
-              <Text style={styles.modalCloseText}>✕</Text>
+              <Text className="text-lg text-white font-Poppins">✕</Text>
             </TouchableOpacity>
           </View>
           <FlatList
@@ -663,15 +686,15 @@ const handlePhoneNumberChange = (text: string) => {
             keyExtractor={(item) => item.code}
             renderItem={({ item }) => (
               <TouchableOpacity
-                style={styles.countryItem}
+                className="flex-row items-center p-4 border-b-0.5 border-gray-700"
                 onPress={() => {
                   setCountryCode(item.code);
                   setShowCountryPicker(false);
                 }}
               >
-                <Text style={styles.countryFlag}>{item.flag}</Text>
-                <Text style={styles.countryCode}>{item.code}</Text>
-                <Text style={styles.countryName}>{item.country}</Text>
+                <Text className="text-xl mr-3">{item.flag}</Text>
+                <Text className="text-base text-white font-medium w-15">{item.code}</Text>
+                <Text className="text-sm text-gray-400 flex-1">{item.country}</Text>
               </TouchableOpacity>
             )}
           />
@@ -681,381 +704,75 @@ const handlePhoneNumberChange = (text: string) => {
   );
 
   return (
-    <View style={styles.container}>
+    <View className='flex-1 bg-black'>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
-      
+
       {/* Background Elements */}
-      <Svg style={styles.gradient} width="100%" height="100%">
-        <Defs>
-          <RadialGradient id="grad" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor="#000000" stopOpacity="1" />
-            <Stop offset="100%" stopColor="#000000" stopOpacity="1" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#grad)" />
-      </Svg>
+      <View className="absolute inset-0 z-0">
+        {/* Background gradient */}
+        <Svg height="50%" width="100%" className="absolute top-0 left-0">
+          <Defs>
+            <RadialGradient
+              id="pinkGlow"
+              cx="0%" cy="10%" r="90%"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#99225E" stopOpacity="0.4" />
+              <Stop offset="100%" stopColor="#000" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
+        </Svg>
 
-      <View style={styles.unionContainer}>
-        <Union />
+        {/* Glow background effect */}
+        <View
+          className="absolute"
+          style={{
+            left: -26,           // X position from Figma
+            top: -54,            // Y position from Figma  
+            width: 524,          // Width from Figma
+            height: 237,         // Height from Figma
+            transform: [{ rotate: '20deg' }], // No rotation
+            zIndex: 1,           // Adjust as needed for layering
+          }}
+        >
+          <ThirdUnion />
+        </View>
       </View>
 
-      <View style={styles.glowContainer}>
-        <GlowBackground />
-      </View>
-
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton}
+      <SafeAreaView className="flex-1 z-[4]">
+        <View className={`h-11 justify-center px-5 ${Platform.OS === 'android' ? 'mt-5' : ''}`}>
+          <TouchableOpacity
+            className="w-8 h-8 justify-center items-center"
             onPress={() => navigation.goBack()}
           >
             <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
-        <KeyboardAvoidingView 
-          style={styles.keyboardView}
+        <KeyboardAvoidingView
+          className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-          <ScrollView 
-            contentContainerStyle={styles.scrollContent}
+          <ScrollView
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20 }}
             showsVerticalScrollIndicator={false}
           >
-            {step === 'info' ? renderInfoStep() : renderVerificationStep()}
+            <View className="flex-1 pt-10">
+              {step === 'info' ? renderInfoStep() : renderVerificationStep()}
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
       {renderCountryPicker()}
+      <SuccessModal
+        visible={showSuccessModal}
+        onClose={handleSuccessModalClose}
+        title="Thank you"
+        message="Code successfully verified!"
+        buttonText="Let's Setup your profile"
+      />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  gradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 1,
-  },
-  unionContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 2,
-  },
-  glowContainer: {
-    position: 'absolute',
-    top: -66,
-    left: -93,
-    width: 242,
-    height: 218,
-    zIndex: 3,
-  },
-  safeArea: {
-    flex: 1,
-    zIndex: 4,
-  },
-  header: {
-    height: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 0 : 20,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-  },
-  content: {
-    flex: 1,
-    paddingTop: 40,
-  },
-  titleSection: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 10,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#999999',
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    marginBottom: 8,
-  },
-  subtitleGray: {
-    fontSize: 16,
-    color: '#999999',
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  emailHighlight: {
-    color: '#FFFFFF',
-  },
-  formSection: {
-    gap: 16,
-  },
-  inputContainer: {
-    gap: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  inputWrapper: {
-    height: 48,
-    backgroundColor: '#000000',
-    borderRadius: 50,
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  inputWrapperActive: {
-    borderBottomColor: '#FFFFFF',
-  },
-  textInput: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    height: '100%',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  phoneInputContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  countryCodeWrapper: {
-    width: 80,
-    height: 48,
-    backgroundColor: 'transparent',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    opacity: 0.7,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    justifyContent: 'space-between',
-  },
-  countryCodeText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  phoneNumberWrapper: {
-    flex: 1,
-    height: 48,
-    backgroundColor: 'transparent',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    opacity: 0.7,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  phoneNumberInput: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    height: '100%',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  // OTP Input Styles
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 0,
-  },
-  otpInputWrapper: {
-    position: 'relative',
-    width: 48,
-    height: 48,
-  },
-  otpInput: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    backgroundColor: '#000000',
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    textAlign: 'center',
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-  otpInputActive: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  otpInputFilled: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  cursor: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 1,
-    height: 16,
-    backgroundColor: '#FFFFFF',
-    marginLeft: -0.5,
-    marginTop: -8,
-  },
-  bottomSection: {
-    paddingTop: 40,
-    paddingBottom: 64,
-    gap: 16,
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(255, 99, 99, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  errorText: {
-    color: '#FF6B6B',
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  continueButton: {
-    height: 56,
-    backgroundColor: '#B8457B',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  continueButtonDisabled: {
-    opacity: 0.4,
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  resendSection: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  resendText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  resendLink: {
-    color: '#B8457B',
-    fontWeight: '600',
-  },
-  resendButton: {
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resendButtonText: {
-    fontSize: 14,
-    color: '#B8457B',
-    textDecorationLine: 'underline',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  privacyNotice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingTop: 8,
-  },
-  privacyText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#FFFFFF',
-    lineHeight: 18,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  modalClose: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#333',
-  },
-  countryFlag: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  countryCode: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    width: 60,
-  },
-  countryName: {
-    fontSize: 14,
-    color: '#999',
-    flex: 1,
-  },
-});
