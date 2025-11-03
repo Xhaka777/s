@@ -8,7 +8,9 @@ import {
     Dimensions,
     ImageBackground,
     StatusBar,
+    Image,
 } from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 
 const { width, height } = Dimensions.get('window');
 
@@ -23,6 +25,11 @@ export default function WelcomeModal({
     onClose,
     onContinue,
 }: WelcomeModalProps) {
+    const borderWidth = 1.5;
+    const borderRadius = 12;
+    const modalWidth = width - 40;
+    const modalHeight = 500;
+
     return (
         <Modal
             visible={visible}
@@ -32,49 +39,73 @@ export default function WelcomeModal({
         >
             <StatusBar backgroundColor="rgba(0, 0, 0, 0.7)" barStyle="light-content" />
 
-            {/* Background Overlay */}
             <View style={styles.overlay}>
-
                 <View style={styles.modalWrapper}>
-                    {/* Modal Container */}
-                    <View style={styles.modalContainer}>
+                    
+                    {/* Gradient Border Container */}
+                    <LinearGradient
+                        colors={['#000000', '#000000', '#99225E']}
+                        locations={[0, 0.8, 1]}
+                        style={[
+                            styles.borderContainer,
+                            {
+                                width: modalWidth,
+                                height: modalHeight,
+                                borderRadius: borderRadius,
+                            }
+                        ]}
+                    >
+                        {/* Inner Modal Container */}
+                        <View style={[
+                            styles.modalContainer,
+                            {
+                                width: modalWidth - (borderWidth * 2),
+                                height: modalHeight - (borderWidth * 2),
+                                borderRadius: borderRadius - borderWidth,
+                                margin: borderWidth,
+                            }
+                        ]}>
+                            {/* Video/Image Background Area */}
+                            <View style={[styles.videoContainer, { borderTopLeftRadius: borderRadius - borderWidth, borderTopRightRadius: borderRadius - borderWidth }]}>
+                                <ImageBackground
+                                    source={require('../assets/images/main-welcome.jpg')}
+                                    style={styles.videoBg}
+                                    resizeMode="cover"
+                                >
+                                    <View style={styles.gradientOverlay} />
+                                </ImageBackground>
+                            </View>
 
-                        {/* Video/Image Background Area */}
-                        <View style={styles.videoContainer}>
-                            <ImageBackground
-                                source={require('../assets/images/main-welcome.jpg')} // Add your background image
-                                style={styles.videoBg}
-                                resizeMode="cover"
-                            >
-                                <View style={styles.gradientOverlay} />
+                            <View style={styles.playButtonContainer}>
+                                <TouchableOpacity style={styles.playButton} activeOpacity={0.8}>
+                                    <Image
+                                        source={require('../assets/icons/man.png')}
+                                        resizeMode='contain'
+                                        style={{ width: 35, height: 35 }}
+                                    />
+                                </TouchableOpacity>
+                            </View>
 
-                            </ImageBackground>
+                            {/* Content Section */}
+                            <View style={styles.contentContainer}>
+                                <Text style={styles.welcomeTitle}>Welcome Message</Text>
+                                <Text style={styles.welcomeDescription}>
+                                    Lipsum generator: Lorem Ipsum - All
+                                    {'\n'}Lipsum generator: Lorem Ipsum - All the facts
+                                </Text>
+
+                                {/* Continue Button */}
+                                <TouchableOpacity
+                                    style={styles.continueButton}
+                                    onPress={onContinue}
+                                    activeOpacity={0.8}
+                                >
+                                    <Text style={styles.continueButtonText}>Continue</Text>
+                                </TouchableOpacity>
+                            </View>
                         </View>
+                    </LinearGradient>
 
-                        <View style={styles.playButtonContainer}>
-                            <TouchableOpacity style={styles.playButton} activeOpacity={0.8}>
-                                <View style={styles.playIcon} />
-                            </TouchableOpacity>
-                        </View>
-
-                        {/* Content Section */}
-                        <View style={styles.contentContainer}>
-                            <Text style={styles.welcomeTitle}>Welcome Message</Text>
-                            <Text style={styles.welcomeDescription}>
-                                Lipsum generator: Lorem Ipsum - All the facts
-                                {'\n'}Lipsum generator: Lorem Ipsum - All the facts
-                            </Text>
-
-                            {/* Continue Button */}
-                            <TouchableOpacity
-                                style={styles.continueButton}
-                                onPress={onContinue}
-                                activeOpacity={0.8}
-                            >
-                                <Text style={styles.continueButtonText}>Continue</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
                     <TouchableOpacity
                         style={styles.closeButton}
                         onPress={onClose}
@@ -98,24 +129,23 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 20,
     },
-    modalContainer: {
-        width: width - 40,
-        backgroundColor: '#1A1A1A',
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#B8457B',
-        overflow: 'hidden',
-        maxHeight: height * 0.85,
-    },
     modalWrapper: {
         position: 'relative',
         width: width - 40,
         alignItems: 'flex-end',
     },
+    borderContainer: {
+        // This creates the gradient border
+    },
+    modalContainer: {
+        backgroundColor: '#1A1A1A',
+        overflow: 'hidden',
+        position: 'relative',
+    },
     closeButton: {
         position: 'absolute',
-        top: -12, // floats above the top border
-        right: -5, // aligned with right side
+        top: -12,
+        right: -5,
         zIndex: 10,
     },
     closeIcon: {
@@ -131,17 +161,16 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 5,
     },
-
     closeText: {
         fontSize: 26,
         fontWeight: '400',
         color: '#000',
         lineHeight: 26,
     },
-
     videoContainer: {
         height: 280,
         position: 'relative',
+        overflow: 'hidden',
     },
     videoBg: {
         flex: 1,
@@ -150,63 +179,26 @@ const styles = StyleSheet.create({
     gradientOverlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: 'rgba(0, 0, 0, 0.3)',
-        // You can replace this with a proper gradient if needed
     },
     playButtonContainer: {
         position: 'absolute',
-        top: '50%',
+        top: '40%',
         left: '50%',
         transform: [{ translateX: -32 }, { translateY: -32 }],
         zIndex: 5,
     },
-
     playButton: {
         width: 64,
         height: 64,
         borderRadius: 32,
-        backgroundColor: 'rgba(0, 0, 0, 0.6)',
+        backgroundColor: 'rgba(255, 255, 255, 0.69)',
         justifyContent: 'center',
         alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
         elevation: 6,
-    },
-
-    playIcon: {
-        width: 0,
-        height: 0,
-        borderTopWidth: 10,
-        borderBottomWidth: 10,
-        borderLeftWidth: 16,
-        borderTopColor: 'transparent',
-        borderBottomColor: 'transparent',
-        borderLeftColor: '#FFFFFF',
-        marginLeft: 4,
-    },
-
-    profileContainer: {
-        position: 'absolute',
-        bottom: 20,
-        right: 20,
-    },
-    profileButton: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        backgroundColor: '#B8457B',
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderWidth: 2,
-        borderColor: '#FFFFFF',
-    },
-    profileText: {
-        fontSize: 20,
-        fontWeight: '600',
-        color: '#FFFFFF',
     },
     contentContainer: {
         padding: 24,
@@ -218,7 +210,7 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         textAlign: 'center',
         marginBottom: 16,
-        fontFamily: 'Inter', // Make sure to add Inter font to your project
+        fontFamily: 'Inter',
     },
     welcomeDescription: {
         fontSize: 16,
@@ -245,29 +237,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontWeight: '600',
-        fontFamily: 'Poppins', // Make sure to add Poppins font to your project
-    },
-    privacyContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingBottom: 24,
-        gap: 12,
-    },
-    privacyIcon: {
-        width: 24,
-        height: 24,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    shieldIcon: {
-        fontSize: 16,
-    },
-    privacyText: {
-        flex: 1,
-        fontSize: 14,
-        color: '#FFFFFF',
         fontFamily: 'Poppins',
-        lineHeight: 18,
     },
 });

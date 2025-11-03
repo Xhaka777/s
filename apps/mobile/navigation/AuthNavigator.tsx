@@ -6,11 +6,12 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import TermsAndConditions from '../screens/auth/TermsAndConditions';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
-import { CountrySetupScreen, DocumentVerification, IDScanScreen } from '../screens/auth';
+import { CountrySetupScreen, DocumentVerification, IDScanScreen, WelcomeQuestionnaire } from '../screens/auth';
 import VerifyIndentity from '../screens/auth/VerifyIdentityScreen';
 import ChooseVerify from '../screens/auth/ChooseVerifyScreen';
 import VerifiedSuccess from '../screens/auth/VerifiedSuccessScreen';
 import VerificationFailed from '../screens/auth/VerificationFailedScreen';
+import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionnaire';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -26,6 +27,9 @@ export type AuthStackParamList = {
   DocumentationVerification: undefined;
   VerifiedSuccess: undefined;
   VerificationFailed: undefined;
+  //
+  WelcomeQuestionnaire: undefined;
+  SpoonedQuestionnaire: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -52,6 +56,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="DocumentationVerification" component={DocumentVerification} />
       <Stack.Screen name="VerifiedSuccess" component={VerifiedSuccess} />
       <Stack.Screen name="VerificationFailed" component={VerificationFailed} />
+      <Stack.Screen name="WelcomeQuestionnaire" component={WelcomeQuestionnaire} />
+      <Stack.Screen name="SpoonedQuestionnaire" component={SpoonedQuestionnaire} />
     </Stack.Navigator>
   );
 }

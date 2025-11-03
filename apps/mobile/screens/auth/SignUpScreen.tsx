@@ -474,6 +474,42 @@ export default function SignUpScreen() {
     await handleSendVerificationCode();
   };
 
+// interface SignupRequest {
+//   email: string;
+//   phone_e164: string;
+//   preferred_language: string;
+//   firebase_session_token: string;
+// }
+
+//   const handleSignup = async () => {
+//   // Validate inputs
+//   if (!ValidationUtils.isValidEmail(email)) {
+//     setError('Invalid email format');
+//     return;
+//   }
+
+//   // Format phone number
+//   const phoneData = PhoneUtils.parsePhoneNumber(countryCode, phoneNumber);
+
+//   // Prepare signup data
+//   const signupData: SignupRequest = {
+//     email: email,
+//     phone_e164: phoneData.e164Format,
+//     preferred_language: 'en',
+//     firebase_session_token: await FirebaseUtils.getSessionToken(),
+//   };
+
+//   // Make API call
+//   const response = await authService.signup(signupData);
+  
+//   if (response.error) {
+//     setError(response.error.message);
+//   } else {
+//     // Handle success
+//     console.log('Signup successful:', response.data);
+//   }
+// };
+
   const renderOtpInputs = () => {
     return (
       <View className="flex-row justify-between items-center my-5 px-0">

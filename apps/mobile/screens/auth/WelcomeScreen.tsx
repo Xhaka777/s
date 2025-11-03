@@ -147,7 +147,7 @@ export default function WelcomeScreen() {
             {/* Create Account Button */}
             <Button
               title={t('welcome.createAccount')}
-              onPress={() => navigation.navigate('ProfileSetup')}
+              onPress={() => navigation.navigate('WelcomeQuestionnaire')}
               // onPress={() => navigation.navigate('SignUp')}
               variant="secondary"
               style={{

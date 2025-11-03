@@ -10,3 +10,6 @@ export { default as ChooseVerifyScreen } from './ChooseVerifyScreen';
 export { default as IDScanScreen } from './IDScanScreen';
 export { default as DocumentVerification } from './DocumentVerificationScreen';
 export { default as VerifiedSuccess } from './VerifiedSuccessScreen';
+//
+export { default as WelcomeQuestionnaire } from './questionnaire/WelcomeQuestionnaire'
+export { default as SpoonedQuestionnaire } from './questionnaire/SpoonedQuestionnaire'
