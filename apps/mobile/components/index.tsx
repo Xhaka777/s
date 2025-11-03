@@ -4,3 +4,7 @@ export { default as VideoWelcomeModal } from './VideoWelcomeModal';
 export { default as SplashScreen } from './SplashScreen';
 export { default as SecUnion } from './svg/SecUnion';
 export { default as SuccessModal } from './SuccessModal';
+export { default as Button } from './Button';
+export { default as Input } from './Input';
+export { default as ThirdUnion } from './svg/ThirdUnion'; 
+export { default as RadialGradientContent} from './RadialGradientContent';

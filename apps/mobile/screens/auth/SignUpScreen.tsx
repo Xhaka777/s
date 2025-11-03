@@ -13,6 +13,7 @@ import {
   Alert,
   Modal,
   FlatList,
+  Image
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Shield, ChevronDown } from 'lucide-react-native';
@@ -22,7 +23,7 @@ import Union from '../../components/svg/Union';
 import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { SuccessModal } from '../../components';
+import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
 
 // Debug utilities
 const debugFirebaseSetup = () => {
@@ -144,11 +145,12 @@ export default function SignUpScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
   // Phone verification states
   const [confirm, setConfirm] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
   const [verificationCode, setVerificationCode] = useState('');
   const [step, setStep] = useState<'info' | 'verification'>('info');
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   // OTP Input states
   const [otpValues, setOtpValues] = useState(['', '', '', '', '', '']);
@@ -206,20 +208,6 @@ export default function SignUpScreen() {
         } catch (error) {
           console.error('❌ Error getting ID token:', error);
         }
-
-        Alert.alert(
-          'Welcome to Spooned!',
-          `Your phone number has been verified successfully.\n\nUID: ${user.uid}\nPhone: ${user.phoneNumber}`,
-          [
-            {
-              text: 'Continue',
-              onPress: () => {
-                // navigation.navigate('Main'); // Uncomment when ready
-                console.log('🚀 Ready to navigate to main app');
-              }
-            }
-          ]
-        );
       } else {
         console.log('👤 No user signed in');
       }
@@ -276,217 +264,116 @@ export default function SignUpScreen() {
     const allowedChars = text.replace(/[^\d+]/g, '');
 
     // If the text starts with + and has sufficient digits, try priority country detection
-    if (allowedChars.startsWith('+') && allowedChars.length >= 9) { // At least +X plus 6 digits
-      const detection = detectPriorityCountryCode(allowedChars);
+    if (allowedChars.startsWith('+') && allowedChars.length >= 8) {
+      const { countryCode: detectedCode, remainingNumber, detected } = detectPriorityCountryCode(allowedChars);
 
-      console.log('🎯 Priority country detection result:', {
-        input: allowedChars,
-        detected: detection.detected,
-        countryCode: detection.countryCode,
-        remainingNumber: detection.remainingNumber
-      });
-
-      // Only apply auto-detection if we found a priority country
-      if (detection.detected && detection.countryCode) {
-        console.log(`🎉 Auto-detected priority country: ${detection.countryCode}`);
-        setCountryCode(detection.countryCode);
-        setPhoneNumber(detection.remainingNumber);
-        return; // Exit early, don't set the full text
+      if (detected) {
+        console.log('🎯 Auto-setting country code and phone number');
+        setCountryCode(detectedCode);
+        setPhoneNumber(remainingNumber);
+        return;
       }
     }
 
-    // Normal phone number input handling (no auto-detection)
-    setPhoneNumber(allowedChars);
-    console.log('📝 Phone number set to:', allowedChars);
-  };
-
-  // Enhanced country code input handler
-  const handleCountryCodeChange = (text: string) => {
-    // Ensure it starts with + and only contains digits after that
-    let cleanText = text;
-    if (!cleanText.startsWith('+')) {
-      cleanText = '+' + cleanText.replace(/[^\d]/g, '');
+    // If no + or doesn't start with +, treat as phone number input
+    if (!allowedChars.startsWith('+')) {
+      setPhoneNumber(allowedChars);
     } else {
-      cleanText = '+' + cleanText.substring(1).replace(/[^\d]/g, '');
-    }
-
-    // Limit length to reasonable country code length (+1 to +9999)
-    if (cleanText.length <= 5) {
-      setCountryCode(cleanText);
+      // If starts with + but no country detected, keep as is in phone field
+      setPhoneNumber(allowedChars);
     }
   };
 
-  const handleSendVerification = async () => {
+  const handleSendVerificationCode = async () => {
     if (!validateForm()) {
       return;
     }
 
-    setLoading(true);
-    setError('');
-
     try {
-      const fullPhoneNumber = debugPhoneNumber(countryCode, phoneNumber);
+      setLoading(true);
+      setError('');
 
-      console.log('🔍 === PHONE VERIFICATION DEBUG ===');
-      console.log('📱 Country Code:', countryCode);
-      console.log('📞 Phone Number (input):', phoneNumber);
-      console.log('🌍 Full Phone Number:', fullPhoneNumber);
-      console.log('✅ E.164 Valid:', validatePhoneNumber(fullPhoneNumber));
-      console.log('📏 Length:', fullPhoneNumber.length);
-      console.log('🔢 Pattern Check:', /^\+[1-9]\d{1,14}$/.test(fullPhoneNumber));
+      const fullPhoneNumber = formatPhoneNumber(countryCode, phoneNumber);
+      console.log('📞 === ATTEMPTING PHONE VERIFICATION ===');
+      console.log('🌍 Full phone number:', fullPhoneNumber);
 
-      if (!validatePhoneNumber(fullPhoneNumber)) {
-        throw new Error('Invalid phone number format before sending');
-      }
+      // Debug the formatted phone number
+      debugPhoneNumber(countryCode, phoneNumber);
 
-      console.log('📡 Attempting to send SMS to:', fullPhoneNumber);
-      console.log('🔥 Firebase Auth Instance:', getAuth().app.name);
-
-      const authInstance = getAuth();
-      const confirmation = await signInWithPhoneNumber(authInstance, fullPhoneNumber);
+      // Create confirmation result
+      const confirmation = await signInWithPhoneNumber(getAuth(), fullPhoneNumber);
 
       console.log('✅ === SMS SENT SUCCESSFULLY ===');
-      console.log('📨 Confirmation Object:', confirmation);
-      console.log('🆔 Verification ID:', confirmation.verificationId);
-      console.log('📱 Phone Number in Confirmation:', fullPhoneNumber);
-      console.log('⏰ SMS should arrive within 1-2 minutes');
-      console.log('📞 Check your phone:', fullPhoneNumber);
+      console.log('📱 Confirmation result:', !!confirmation);
+      console.log('🔗 Verification ID:', confirmation.verificationId);
 
       setConfirm(confirmation);
       setStep('verification');
+      setOtpValues(['', '', '', '', '', '']); // Reset OTP values
+      setCurrentOtpIndex(0); // Reset current index
 
-      Alert.alert(
-        'Verification Code Sent! 📱',
-        `We've sent a verification code to ${fullPhoneNumber}\n\nCheck your SMS messages.\nCode should arrive within 1-2 minutes.`,
-        [{ text: 'OK' }]
-      );
-    } catch (err: any) {
+    } catch (error: any) {
       console.error('❌ === PHONE VERIFICATION ERROR ===');
-      console.error('Error code:', err.code);
-      console.error('Error message:', err.message);
-      console.error('Full error:', err);
+      console.error('Error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
 
-      // More specific error handling
-      if (err.code === 'auth/invalid-phone-number') {
-        setError(`Invalid phone number format: ${formatPhoneNumber(countryCode, phoneNumber)}`);
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many requests. Please wait before trying again.');
-      } else if (err.code === 'auth/quota-exceeded') {
-        setError('SMS quota exceeded. Please try again tomorrow.');
-      } else if (err.code === 'auth/app-not-authorized') {
-        setError('App not authorized. Check Firebase configuration.');
-      } else if (err.code === 'auth/missing-app-credential') {
-        setError('Missing app credentials. Check Firebase setup.');
-      } else if (err.code === 'auth/captcha-check-failed') {
-        setError('Captcha verification failed. Please try again.');
-      } else if (err.code === 'auth/web-storage-unsupported') {
-        setError('Web storage not supported. Please enable cookies.');
-      } else {
-        setError(`SMS failed: ${err.code || err.message}. Check console for details.`);
+      let errorMessage = 'Failed to send verification code. Please try again.';
+
+      switch (error.code) {
+        case 'auth/invalid-phone-number':
+          errorMessage = 'Invalid phone number format. Please check your number.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please try again later.';
+          break;
+        case 'auth/quota-exceeded':
+          errorMessage = 'SMS quota exceeded. Please try again later.';
+          break;
+        case 'auth/user-disabled':
+          errorMessage = 'This phone number has been disabled.';
+          break;
+        default:
+          if (error.message) {
+            errorMessage = error.message;
+          }
       }
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleVerifyCode = async () => {
-    if (!verificationCode.trim()) {
-      setError('Please enter the verification code');
-      return;
-    }
-
-    if (!confirm) {
-      setError('No verification session found. Please try again');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-
-    try {
-      console.log('🔐 === CODE VERIFICATION DEBUG ===');
-      console.log('📝 Entered Code:', verificationCode);
-      console.log('📏 Code Length:', verificationCode.length);
-      console.log('🆔 Verification ID:', confirm.verificationId);
-      console.log('⏱️ Attempting verification...');
-
-      const result = await confirm.confirm(verificationCode);
-
-      console.log('✅ === CODE VERIFICATION SUCCESS ===');
-      console.log('🎉 Verification Result:', result);
-      console.log('👤 User Object:', result.user);
-      console.log('📱 Verified Phone:', result.user.phoneNumber);
-      console.log('🆔 User UID:', result.user.uid);
-
-    } catch (err: any) {
-      console.error('❌ === CODE VERIFICATION ERROR ===');
-      console.error('Error code:', err.code);
-      console.error('Error message:', err.message);
-      console.error('Full error:', err);
-      console.log('🔄 Verification ID used:', confirm.verificationId);
-      console.log('📝 Code entered:', verificationCode);
-
-      if (err.code === 'auth/invalid-verification-code') {
-        setError(`Invalid verification code: "${verificationCode}". Please check and try again.`);
-      } else if (err.code === 'auth/code-expired') {
-        setError('Verification code expired. Please request a new one.');
-        setStep('info');
-        setConfirm(null);
-        setVerificationCode('');
-      } else if (err.code === 'auth/too-many-requests') {
-        setError('Too many verification attempts. Please try again later.');
-      } else {
-        setError(`Verification failed: ${err.code || err.message}`);
-      }
-    } finally {
-      setLoading(false);
-    }
-
-    setOtpValues(['', '', '', '', '', '']); // Reset OTP values
-    setCurrentOtpIndex(0); // Reset current index
-  };
-
-  const handleResendCode = async () => {
-    setStep('info');
-    setConfirm(null);
-    setVerificationCode('');
-    setError('');
-    setOtpValues(['', '', '', '', '', '']);
-    setCurrentOtpIndex(0);
-    await handleSendVerification();
-  };
-
-  const selectCountryCode = (code: string) => {
-    setCountryCode(code);
-    setShowCountryPicker(false);
-    setError('');
   };
 
   // OTP Input handlers
   const handleOtpChange = (value: string, index: number) => {
+    // Only allow single digit
+    if (value.length > 1) {
+      value = value.slice(-1);
+    }
+
+    // Only allow numbers
+    if (!/^\d*$/.test(value)) {
+      return;
+    }
+
     const newOtpValues = [...otpValues];
     newOtpValues[index] = value;
     setOtpValues(newOtpValues);
 
-    // Move to next input if value is entered and not the last input
-    if (value && index < otpValues.length - 1) {
-      const nextInput = otpRefs.current[index + 1];
-      if (nextInput) {
-        nextInput.focus();
-      }
+    // Auto focus next input
+    if (value && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+      setCurrentOtpIndex(index + 1);
     }
 
-    // Check if OTP is complete and equals "222222"
-    const completeOtp = newOtpValues.join('');
-    if (completeOtp.length === 6) {
-      if (completeOtp === '222222') {
-        // Show success modal for test OTP
-        setShowSuccessModal(true);
-      } else {
-        // For real implementation, you would verify with Firebase here
-        // For now, we'll just show an error
-        setError('Invalid verification code. Use 222222 for testing.');
-      }
+    // Update verification code
+    const otpString = newOtpValues.join('');
+    setVerificationCode(otpString);
+
+    // Auto verify if all 6 digits are entered
+    if (otpString.length === 6) {
+      handleVerifyCode(otpString);
     }
   };
 
@@ -510,152 +397,134 @@ export default function SignUpScreen() {
     setCurrentOtpIndex(index);
   };
 
-  const renderCountryPicker = () => (
-    <Modal
-      visible={showCountryPicker}
-      transparent
-      animationType="slide"
-      onRequestClose={() => setShowCountryPicker(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Country Code</Text>
-            <TouchableOpacity
-              onPress={() => setShowCountryPicker(false)}
-              style={styles.modalClose}
-            >
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={COUNTRY_CODES}
-            keyExtractor={(item) => item.code}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.countryItem}
-                onPress={() => selectCountryCode(item.code)}
-              >
-                <Text style={styles.countryFlag}>{item.flag}</Text>
-                <Text style={styles.countryCode}>{item.code}</Text>
-                <Text style={styles.countryName}>{item.country}</Text>
-              </TouchableOpacity>
-            )}
-          />
-        </View>
-      </View>
-    </Modal>
-  );
+  const handleVerifyCode = async (code?: string) => {
+    const codeToVerify = code || verificationCode;
 
-  const renderInfoStep = () => (
-    <>
-      <View style={styles.content}>
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>Can we get your information please?</Text>
-          <Text style={styles.subtitle}>
-            We only use your information to make sure everyone in Spooned is real.
-          </Text>
-        </View>
+    if (!codeToVerify || codeToVerify.length !== 6) {
+      setError('Please enter the complete 6-digit verification code');
+      return;
+    }
 
-        <View style={styles.formSection}>
-          {/* Email input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email address*</Text>
-            <View style={[styles.inputWrapper, email.length > 0 && styles.inputWrapperActive]}>
-              <TextInput
-                style={styles.textInput}
-                placeholder="your@email.com"
-                placeholderTextColor="#666666"
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setError('');
-                }}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="email-address"
-                editable={!loading}
-              />
-            </View>
-          </View>
+    if (!confirm) {
+      setError('No verification session found. Please request a new code.');
+      return;
+    }
 
-          {/* Phone number input */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number *</Text>
-            <View style={styles.phoneInputContainer}>
-              {/* Country code picker */}
-              <View style={styles.countryCodeWrapper}>
-                <TextInput
-                  style={styles.countryCodeText}
-                  value={countryCode}
-                  onChangeText={handleCountryCodeChange}
-                  placeholder="+1"
-                  placeholderTextColor="#666666"
-                  keyboardType="phone-pad"
-                  maxLength={5}
-                  editable={!loading}
-                />
-              </View>
+    try {
+      setLoading(true);
+      setError('');
 
-              {/* Phone number input */}
-              <View style={styles.phoneNumberWrapper}>
-                <TextInput
-                  style={styles.phoneNumberInput}
-                  placeholder="Your phone number"
-                  placeholderTextColor="#666666"
-                  value={phoneNumber}
-                  onChangeText={handlePhoneNumberChange}
-                  keyboardType="phone-pad"
-                  editable={!loading}
-                />
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
+      console.log('🔐 === VERIFYING CODE ===');
+      console.log('📟 Code to verify:', codeToVerify);
+      console.log('🔗 Confirmation object:', !!confirm);
 
-      <View style={styles.bottomSection}>
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
+      const credential = await confirm.confirm(codeToVerify);
 
-        <TouchableOpacity
-          style={[styles.continueButton, loading && styles.continueButtonDisabled]}
-          onPress={handleSendVerification}
-          disabled={loading || !email || !phoneNumber}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.continueButtonText}>
-            {loading ? 'Sending code...' : 'Send Verification Code'}
-          </Text>
-        </TouchableOpacity>
+      console.log('🎉 === VERIFICATION SUCCESS ===');
+      console.log('✅ User credential:', !!credential);
+      console.log('👤 User:', credential.user?.uid);
+      console.log('📱 Phone number verified:', credential.user?.phoneNumber);
 
-        <View style={styles.privacyNotice}>
-          <Shield size={24} color="#FFFFFF" />
-          <Text style={styles.privacyText}>
-            We never share this with anyone and it won't be on your profile!
-          </Text>
-        </View>
-      </View>
-    </>
-  );
+      // The onAuthStateChanged listener will handle the rest
+
+      setShowSuccessModal(true);
+    } catch (error: any) {
+      console.error('❌ === CODE VERIFICATION ERROR ===');
+      console.error('Error details:', error);
+      console.error('Error code:', error.code);
+      console.error('Error message:', error.message);
+
+      let errorMessage = 'Invalid verification code. Please try again.';
+
+      switch (error.code) {
+        case 'auth/invalid-verification-code':
+          errorMessage = 'Invalid verification code. Please check and try again.';
+          break;
+        case 'auth/code-expired':
+          errorMessage = 'Verification code has expired. Please request a new one.';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many failed attempts. Please try again later.';
+          break;
+        default:
+          if (error.message) {
+            errorMessage = error.message;
+          }
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    navigation.navigate('ProfileSetup'); // Uncomment when ready to navigate
+    console.log('🚀 Ready to navigate to main app');
+  };
+
+  const handleResendCode = async () => {
+    // Reset to info step and resend
+    setStep('info');
+    setConfirm(null);
+    setVerificationCode('');
+    setOtpValues(['', '', '', '', '', '']);
+    setCurrentOtpIndex(0);
+    await handleSendVerificationCode();
+  };
+
+// interface SignupRequest {
+//   email: string;
+//   phone_e164: string;
+//   preferred_language: string;
+//   firebase_session_token: string;
+// }
+
+//   const handleSignup = async () => {
+//   // Validate inputs
+//   if (!ValidationUtils.isValidEmail(email)) {
+//     setError('Invalid email format');
+//     return;
+//   }
+
+//   // Format phone number
+//   const phoneData = PhoneUtils.parsePhoneNumber(countryCode, phoneNumber);
+
+//   // Prepare signup data
+//   const signupData: SignupRequest = {
+//     email: email,
+//     phone_e164: phoneData.e164Format,
+//     preferred_language: 'en',
+//     firebase_session_token: await FirebaseUtils.getSessionToken(),
+//   };
+
+//   // Make API call
+//   const response = await authService.signup(signupData);
+  
+//   if (response.error) {
+//     setError(response.error.message);
+//   } else {
+//     // Handle success
+//     console.log('Signup successful:', response.data);
+//   }
+// };
 
   const renderOtpInputs = () => {
     return (
-      <View style={styles.otpContainer}>
+      <View className="flex-row justify-between items-center my-5 px-0">
         {otpValues.map((value, index) => (
-          <View key={index} style={styles.otpInputWrapper}>
+          <View key={index} className="relative w-12 h-12">
             <TextInput
               ref={(ref) => {
                 otpRefs.current[index] = ref;
               }}
-              style={[
-                styles.otpInput,
-                currentOtpIndex === index && styles.otpInputActive,
-                value && styles.otpInputFilled
-              ]}
+              className="w-12 h-12 p-1 rounded-[100px] border-[#fff] border-l-[0.50px] border-r-[0.50px] border-t-[0.50px] border-b-[3px] bg-transparent text-white text-lg text-center"
+              style={{
+                borderWidth: 1,
+                borderColor: '#FFFFFF',
+                backgroundColor: 'transparent',
+              }}
               value={value}
               onChangeText={(text) => handleOtpChange(text, index)}
               onKeyPress={({ nativeEvent }) => handleOtpKeyPress(nativeEvent.key, index)}
@@ -667,7 +536,7 @@ export default function SignUpScreen() {
               autoFocus={index === 0}
             />
             {currentOtpIndex === index && !value && (
-              <View style={styles.cursor} />
+              <View className="absolute left-1/2 top-1/2 w-0.5 h-4 bg-white -ml-0.5 -mt-2" />
             )}
           </View>
         ))}
@@ -675,28 +544,153 @@ export default function SignUpScreen() {
     );
   };
 
-  const renderVerificationStep = () => (
-    <View style={styles.content}>
-      <View style={styles.titleSection}>
-        <Text style={styles.title}>Verification Number</Text>
-        <Text style={styles.subtitle}>
-          One Time Password (OTP) has been sent via Email to{' '}
-          <Text style={styles.emailHighlight}>{email}</Text>
+  const renderInfoStep = () => (
+    <View className="flex-1">
+      <View className="mb-6">
+        <Text className="text-xl font-PoppinsBold text-white mb-2.5">Create Account</Text>
+        <Text className="text-base text-gray-400 leading-5 font-Poppins">
+          Enter your email and phone number to get started with Spooned
         </Text>
-        <Text style={styles.subtitleGray}>
+      </View>
+
+      <View className="gap-4">
+        <View className="gap-4">
+          {/* <Text className="text-base font-medium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>Email Address</Text> */}
+          <View className="">
+            {/* <TextInput
+              className="text-sm text-white h-full"
+              style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}
+              value={email}
+              onChangeText={setEmail}
+              placeholder="Enter your email"
+              placeholderTextColor="#666666"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            /> */}
+            <Input
+              label="Enter your email"
+              required
+              value={email}
+              onChangeText={setEmail}
+              error={''}
+              autoCapitalize="words"
+              autoCorrect={false}
+              editable={!loading}
+            />
+          </View>
+        </View>
+
+        <View className="gap-4">
+          <Text className="text-base font-PoppinsMedium text-white">Phone Number*</Text>
+          <View className="flex-row gap-2.5">
+            <TouchableOpacity
+              className="w-20 h-12 bg-transparent rounded-full border border-white opacity-70 flex-row items-center px-4 justify-between"
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text className="text-sm text-white font-Poppins">{countryCode}</Text>
+              <ChevronDown size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+            <View className="flex-1 h-12 bg-transparent rounded-full border border-white opacity-70 px-4 justify-center">
+              <TextInput
+                className="text-sm text-white h-full font-Poppins"
+                value={phoneNumber}
+                onChangeText={handlePhoneNumberChange}
+                placeholder="Phone number"
+                placeholderTextColor="#666666"
+                keyboardType="phone-pad"
+              />
+            </View>
+          </View>
+        </View>
+      </View>
+
+      <View className="pt-10 pb-16 gap-4">
+        {error ? (
+          <View className="bg-red-500/10 p-3 rounded-2 mb-2">
+            <Text className="text-red-300 text-sm text-center font-Poppins">{error}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          className={`h-14 bg-[#B8457B] rounded-full justify-center items-center ${(loading || !email.trim() || !phoneNumber.trim()) ? 'opacity-40' : ''
+            }`}
+          style={{
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
+          onPress={handleSendVerificationCode}
+          disabled={loading || !email.trim() || !phoneNumber.trim()}
+        >
+          <Text className="text-base font-PoppinsMedium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>
+            {loading ? 'Sending Code...' : 'Send Verification Code'}
+          </Text>
+        </TouchableOpacity>
+
+        <View className="flex-row items-start gap-2 pt-2">
+          <Image
+            source={require('../../assets/icons/shield.png')}
+            className="w-[20px] h-[20px]"
+            resizeMode="contain"
+          />
+          <Text className="flex-1 text-sm text-white leading-4 font-Poppins">
+            We'll send you a verification code to confirm your phone number.
+            Standard messaging rates may apply.
+          </Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderVerificationStep = () => (
+    <View className="flex-1">
+      <View className="mb-6">
+        <Text className="text-xl font-PoppinsMedium text-white mb-2.5">Verification Number</Text>
+        <Text className="text-base text-gray-400 leading-5 mb-2 font-Poppins">
+          One Time Password (OTP) has been sent via Email to{' '}
+          <Text className="text-white font-Poppins">{email}</Text>
+        </Text>
+        <Text className="text-base text-gray-400 leading-5 font-Poppins">
           Enter the OTP below to verify it.
         </Text>
       </View>
 
-      <View style={styles.formSection}>
+      <View className="gap-4">
         {renderOtpInputs()}
       </View>
 
-      <View style={styles.bottomSection}>
-        <View style={styles.resendSection}>
-          <Text style={styles.resendText}>
+      <View className="pt-10 pb-16 gap-4">
+        {error ? (
+          <View className="bg-red-500/10 p-3 rounded-2 mb-2">
+            <Text className="text-red-300 text-sm text-center font-Poppins">{error}</Text>
+          </View>
+        ) : null}
+
+        <TouchableOpacity
+          className={`h-14 bg-[#B8457B] rounded-full justify-center items-center ${(loading || verificationCode.length !== 6) ? 'opacity-40' : ''
+            }`}
+          style={{
+            shadowColor: '#000000',
+            shadowOffset: { width: 0, height: 1 },
+            shadowOpacity: 0.06,
+            shadowRadius: 2,
+            elevation: 2,
+          }}
+          onPress={() => handleVerifyCode()}
+          disabled={loading || verificationCode.length !== 6}
+        >
+          <Text className="text-base font-PoppinsMedium text-white">
+            {loading ? 'Verifying...' : 'Verify Code'}
+          </Text>
+        </TouchableOpacity>
+
+        <View className="items-center mt-2">
+          <Text className="text-sm text-white font-Poppins">
             Didn't Get OTP?{' '}
-            <Text style={styles.resendLink} onPress={handleResendCode}>
+            <Text className="text-[#B8457B] font-semibold" onPress={handleResendCode}>
               Resend in 0:23
             </Text>
           </Text>
@@ -705,405 +699,116 @@ export default function SignUpScreen() {
     </View>
   );
 
+  const renderCountryPicker = () => (
+    <Modal
+      visible={showCountryPicker}
+      animationType="slide"
+      transparent={true}
+      onRequestClose={() => setShowCountryPicker(false)}
+    >
+      <View className="flex-1 bg-black/80 justify-end">
+        <View className="bg-[#1a1a1a] rounded-t-5 max-h-[70%]">
+          <View className="flex-row justify-between items-center p-5 border-b border-gray-700">
+            <Text className="text-lg font-PoppinsBold text-white">Select Country</Text>
+            <TouchableOpacity
+              className="w-7.5 h-7.5 justify-center items-center"
+              onPress={() => setShowCountryPicker(false)}
+            >
+              <Text className="text-lg text-white font-Poppins">✕</Text>
+            </TouchableOpacity>
+          </View>
+          <FlatList
+            data={COUNTRY_CODES}
+            keyExtractor={(item) => item.code}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                className="flex-row items-center p-4 border-b-0.5 border-gray-700"
+                onPress={() => {
+                  setCountryCode(item.code);
+                  setShowCountryPicker(false);
+                }}
+              >
+                <Text className="text-xl mr-3">{item.flag}</Text>
+                <Text className="text-base text-white font-medium w-15">{item.code}</Text>
+                <Text className="text-sm text-gray-400 flex-1">{item.country}</Text>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
+      </View>
+    </Modal>
+  );
+
   return (
-    <View style={styles.container}>
+    <View className='flex-1 bg-black'>
       <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
-      <Svg height="50%" width="100%" style={styles.gradient}>
-        <Defs>
-          <RadialGradient
-            id="pinkGlow"
-            cx="0%" cy="10%" r="90%"
-            gradientUnits="userSpaceOnUse"
-          >
-            <Stop offset="0%" stopColor="#ff3c8c" stopOpacity="0.5" />
-            <Stop offset="100%" stopColor="#000" stopOpacity="0" />
-          </RadialGradient>
-        </Defs>
-        <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
-      </Svg>
+      {/* Background Elements */}
+      <View className="absolute inset-0 z-0">
+        {/* Background gradient */}
+        <Svg height="50%" width="100%" className="absolute top-0 left-0">
+          <Defs>
+            <RadialGradient
+              id="pinkGlow"
+              cx="0%" cy="10%" r="90%"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#99225E" stopOpacity="0.4" />
+              <Stop offset="100%" stopColor="#000" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
+        </Svg>
 
-      <View style={styles.unionContainer}>
-        <Union />
+        {/* Glow background effect */}
+        <View
+          className="absolute"
+          style={{
+            left: -26,           // X position from Figma
+            top: -54,            // Y position from Figma  
+            width: 524,          // Width from Figma
+            height: 237,         // Height from Figma
+            transform: [{ rotate: '20deg' }], // No rotation
+            zIndex: 1,           // Adjust as needed for layering
+          }}
+        >
+          <ThirdUnion />
+        </View>
       </View>
 
-      <View style={styles.glowContainer}>
-        <GlowBackground width={242} height={218} />
-      </View>
-
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
+      <SafeAreaView className="flex-1 z-[4]">
+        <View className={`h-11 justify-center px-5 ${Platform.OS === 'android' ? 'mt-5' : ''}`}>
           <TouchableOpacity
-            onPress={() => {
-              if (step === 'verification') {
-                setStep('info');
-                setConfirm(null);
-                setVerificationCode('');
-                setError('');
-              } else {
-                navigation.goBack();
-              }
-            }}
-            style={styles.backButton}
-            activeOpacity={0.7}
+            className="w-8 h-8 justify-center items-center"
+            onPress={() => navigation.goBack()}
           >
-            <ArrowLeft size={24} color="#FFFFFF" strokeWidth={1.5} />
+            <ArrowLeft size={20} color="#FFFFFF" />
           </TouchableOpacity>
         </View>
 
         <KeyboardAvoidingView
-          style={styles.keyboardView}
+          className="flex-1"
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
           <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
+            contentContainerStyle={{ flexGrow: 1, paddingHorizontal: 20 }}
             showsVerticalScrollIndicator={false}
           >
-            {step === 'info' ? renderInfoStep() : renderVerificationStep()}
+            <View className="flex-1 pt-10">
+              {step === 'info' ? renderInfoStep() : renderVerificationStep()}
+            </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </SafeAreaView>
 
       {renderCountryPicker()}
-
       <SuccessModal
         visible={showSuccessModal}
-        onClose={() => setShowSuccessModal(false)}
-        onContinue={() => {
-          setShowSuccessModal(false);
-          navigation.navigate('ProfileSetupScreen');
-        }}
+        onClose={handleSuccessModalClose}
+        title="Thank you"
+        message="Code successfully verified!"
+        buttonText="Let's Setup your profile"
       />
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  gradient: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 1,
-  },
-  unionContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    zIndex: 2,
-  },
-  glowContainer: {
-    position: 'absolute',
-    top: -66,
-    left: -93,
-    width: 242,
-    height: 218,
-    zIndex: 3,
-  },
-  safeArea: {
-    flex: 1,
-    zIndex: 4,
-  },
-  header: {
-    height: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 20,
-    marginTop: Platform.OS === 'ios' ? 0 : 20,
-  },
-  backButton: {
-    width: 32,
-    height: 32,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-  },
-  content: {
-    flex: 1,
-    paddingTop: 40,
-  },
-  titleSection: {
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 10,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#999999',
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  formSection: {
-    gap: 16,
-  },
-  inputContainer: {
-    gap: 16,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  inputWrapper: {
-    height: 48,
-    backgroundColor: '#000000',
-    borderRadius: 50,
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    position: 'relative',
-  },
-  inputWrapperActive: {
-    borderBottomColor: '#FFFFFF',
-  },
-  textInput: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    height: '100%',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  phoneInputContainer: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  countryCodeWrapper: {
-    width: 80,
-    height: 48,
-    backgroundColor: 'transparent',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    opacity: 0.7,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    justifyContent: 'space-between',
-  },
-  countryCodeText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  phoneNumberWrapper: {
-    flex: 1,
-    height: 48,
-    backgroundColor: 'transparent',
-    borderRadius: 50,
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
-    opacity: 0.7,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  phoneNumberInput: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    height: '100%',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  bottomSection: {
-    paddingTop: 40,
-    paddingBottom: 64,
-    gap: 16,
-  },
-  errorContainer: {
-    backgroundColor: 'rgba(255, 99, 99, 0.1)',
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  errorText: {
-    color: '#FF6B6B',
-    fontSize: 14,
-    textAlign: 'center',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  continueButton: {
-    height: 56,
-    backgroundColor: '#B8457B',
-    borderRadius: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  continueButtonDisabled: {
-    opacity: 0.4,
-  },
-  continueButtonText: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  resendButton: {
-    height: 48,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  resendButtonText: {
-    fontSize: 14,
-    color: '#B8457B',
-    textDecorationLine: 'underline',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  privacyNotice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    paddingTop: 8,
-  },
-  privacyText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#FFFFFF',
-    lineHeight: 18,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#1a1a1a',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: '70%',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#333',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-  },
-  modalClose: {
-    width: 30,
-    height: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalCloseText: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  countryItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#333',
-  },
-  countryFlag: {
-    fontSize: 20,
-    marginRight: 12,
-  },
-  countryCode: {
-    fontSize: 16,
-    color: '#FFFFFF',
-    fontWeight: '500',
-    width: 60,
-  },
-  countryName: {
-    fontSize: 14,
-    color: '#999',
-    flex: 1,
-  },
-  // Add these to your StyleSheet.create():
-  subtitleGray: {
-    fontSize: 16,
-    color: '#999999',
-    lineHeight: 22,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  emailHighlight: {
-    color: '#FFFFFF',
-  },
-  // OTP Input Styles
-  otpContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 20,
-    paddingHorizontal: 0,
-  },
-  otpInputWrapper: {
-    position: 'relative',
-    width: 48,
-    height: 48,
-  },
-  otpInput: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 0.5,
-    borderColor: '#FFFFFF',
-    borderBottomWidth: 3,
-    backgroundColor: '#000000',
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    textAlign: 'center',
-    paddingTop: 0,
-    paddingBottom: 0,
-  },
-  otpInputActive: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  otpInputFilled: {
-    borderBottomColor: '#FFFFFF',
-    borderColor: '#FFFFFF',
-  },
-  cursor: {
-    position: 'absolute',
-    left: '50%',
-    top: '50%',
-    width: 1,
-    height: 16,
-    backgroundColor: '#FFFFFF',
-    marginLeft: -0.5,
-    marginTop: -8,
-  },
-  resendSection: {
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  resendText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  resendLink: {
-    color: '#B8457B',
-    fontWeight: '600',
-  },
-});

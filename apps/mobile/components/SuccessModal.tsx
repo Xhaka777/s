@@ -42,7 +42,7 @@ const SuccessModal: React.FC<SuccessModalProps> = ({
             onContinue();
         } else {
             // This will now execute when onContinue is not provided
-            navigation.navigate('ProfileSetupScreen');
+            navigation.navigate('ProfileSetup');
         }
     }
 
