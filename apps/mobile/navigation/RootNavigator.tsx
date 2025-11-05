@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthNavigator from './AuthNavigator';
 import OnboardingNavigator from './OnboardingNavigator';
 import MainNavigator from './MainNavigator';
+import { QueryProvider } from '../providers/query';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -22,6 +23,8 @@ export default function RootNavigator() {
 
 
   return (
+    <QueryProvider>
+
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {!isAuthenticated ? (
@@ -33,6 +36,7 @@ export default function RootNavigator() {
         )}
       </Stack.Navigator>
     </NavigationContainer>
+        </QueryProvider>
   );
 }
 

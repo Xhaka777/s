@@ -5,6 +5,10 @@ export enum QueryKeys {
 }
 
 export enum ApiRoutes {
-    SIGNUP = '/auth/signup',
-    SIGNIN = '/auth/signin'
+    // SIGNUP = '/auth/signup',
+    // SIGNIN = '/auth/signin'
+
+    ONBOARDING_STAGE_ONE = '/api/users/onboardingStageOne',
+    CHECK_SESSION = '/api/users/check-session',
+
 }

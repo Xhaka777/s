@@ -16,6 +16,8 @@ import WelcomeModal from '../../components/WelcomeModal';
 import { Button } from '../../components';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Globe } from 'lucide-react-native';
+import { tokenStorage } from '../../api/services/tokenStorage';
+import { onboardingService } from '../../api/services/onboarding';
 
 const { width, height } = Dimensions.get('window');
 
@@ -64,6 +66,34 @@ export default function WelcomeScreen() {
     // Navigate to Privacy Policy screen
     console.log('Privacy Policy pressed');
   };
+
+  useEffect(() => {
+    checkUserSession();
+  }, []);
+
+  const checkUserSession = async () => {
+    try {
+      const storedToken = await tokenStorage.getToken();
+
+      if (storedToken) {
+        const sessionResponse = await onboardingService.checkSession(storedToken);
+
+        if (sessionResponse.authenticated) {
+          if (sessionResponse.onbordingCompleted) {
+            console.log('user authenticated & onboarding complete')
+          } else {
+            const currentStep = sessionResponse.onboarding?.details?.currentStep;
+            //navigation.navigate(currentStep) ose qysh o logjika n'backend...
+          }
+        } else {
+          console.log('No stored session, showing welcome screen');
+        }
+      }
+    } catch (error) {
+      console.log('Session check error:', error);
+      await tokenStorage.clearToken();
+    }
+  }
 
   return (
     <View className="flex-1 bg-black">
@@ -147,8 +177,8 @@ export default function WelcomeScreen() {
             {/* Create Account Button */}
             <Button
               title={t('welcome.createAccount')}
-              onPress={() => navigation.navigate('WelcomeQuestionnaire')}
-              // onPress={() => navigation.navigate('SignUp')}
+              // onPress={() => navigation.navigate('WelcomeQuestionnaire')}
+              onPress={() => navigation.navigate('SignUp')}
               variant="secondary"
               style={{
                 shadowColor: '#000',
