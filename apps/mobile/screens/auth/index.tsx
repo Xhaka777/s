@@ -1,10 +1,13 @@
+//Stage one...
 export { default as WelcomeScreen } from './WelcomeScreen';
 export { default as SignInScreen } from './SignInScreen';
 export { default as SignUpScreen } from './SignUpScreen';
 export { default as ForgotPasswordScreen } from './ForgotPasswordScreen';
 export { default as TermsAndConditions } from './TermsAndConditions';
+//Stage two...
 export { default as ProfileSetupScreen } from './ProfileSetupScreen';
 export { default as CountrySetupScreen } from './CountrySetupScreen';
+//Stage three...
 export { default as VerifyIndentityScreen } from './VerifyIdentityScreen';
 export { default as ChooseVerifyScreen } from './ChooseVerifyScreen';
 export { default as IDScanScreen } from './IDScanScreen';

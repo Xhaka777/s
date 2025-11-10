@@ -26,6 +26,12 @@ import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
 import { useCompleteStageOne } from '../../api/hooks/useOnboarding';
 import { tokenStorage } from '../../api/services/tokenStorage';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'This method is deprecated (as well as all React Native Firebase namespaced API)',
+  'onAuthStateChanged'
+]);
 
 // Debug utilities
 const debugFirebaseSetup = () => {
@@ -167,15 +173,15 @@ export default function SignUpScreen() {
       if (response.success && response.token) {
         // Save token securely
         await tokenStorage.saveToken(response.token);
-        Alert.alert('Success!', response.message);
+        // Alert.alert('Success!', response.message);
         setShowSuccessModal(true);
       } else {
-        Alert.alert('Info', response.message);
+        // Alert.alert('Info', response.message);
       }
     },
     onError: (error) => {
       console.error('Onboarding error:', error);
-      Alert.alert('Error', error.message || 'Failed to complete onboarding');
+      // Alert.alert('Error', error.message || 'Failed to complete onboarding');
     },
   });
 
@@ -228,14 +234,14 @@ export default function SignUpScreen() {
 
           console.log('📤 Auth data to send to backend:', JSON.stringify(authData, null, 2));
 
-          const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
+          // const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
 
-          await completeStageOne.mutateAsync({
-            email: email,
-            phone_e164: verifiedPhone,
-            preferred_language: 'en',
-            firebase_id_token: idToken,
-          });
+          // await completeStageOne.mutateAsync({
+          //   email: email,
+          //   phone_e164: verifiedPhone,
+          //   preferred_language: 'en',
+          //   firebase_id_token: idToken,
+          // });
 
         } catch (error) {
           console.error('❌ Error getting ID token:', error);
@@ -452,12 +458,23 @@ export default function SignUpScreen() {
 
       const credential = await confirm.confirm(codeToVerify);
 
+      const user = credential?.user;
       console.log('🎉 === VERIFICATION SUCCESS ===');
       console.log('✅ User credential:', !!credential);
-      console.log('👤 User:', credential.user?.uid);
-      console.log('📱 Phone number verified:', credential.user?.phoneNumber);
+      // console.log('👤 User:', credential.user?.uid);
+      // console.log('📱 Phone number verified:', credential.user?.phoneNumber);
 
       // The onAuthStateChanged listener will handle the rest
+      const verifiedPhone = user?.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
+      const idToken = await user?.getIdToken();
+
+
+      await completeStageOne.mutateAsync({
+        email: email,
+        phone_e164: verifiedPhone,
+        preferred_language: 'en',
+        firebase_id_token: idToken,
+      });
 
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -553,17 +570,6 @@ export default function SignUpScreen() {
         <View className="gap-4">
           {/* <Text className="text-base font-medium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>Email Address</Text> */}
           <View className="">
-            {/* <TextInput
-              className="text-sm text-white h-full"
-              style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              placeholderTextColor="#666666"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            /> */}
             <Input
               label="Enter your email"
               required

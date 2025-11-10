@@ -1,8 +1,17 @@
 import { apiClient } from './apis';
 import {
   CheckSessionResponse,
+  CreateUserRequest,
+  CreateUserResponse,
   OnboardingStageOneRequest,
   OnboardingStageOneResponse,
+  OnboardingStageThreeRequest,
+  OnboardingStageThreeResponse,
+  OnboardingStageTwoRequest,
+  OnboardingStageTwoResponse,
+  VeriffStatusResponse,
+  VeriffWebhookRequest,
+  VeriffWebhookResponse,
 } from '../schema/onboarding';
 import { ApiRoutes } from '../types';
 
@@ -27,6 +36,40 @@ export const onboardingService = {
       ApiRoutes.CHECK_SESSION,
       { session_token: sessionToken }
     );
-  }
+  },
+
+  completeStageTwo: async (data: OnboardingStageTwoRequest): Promise<OnboardingStageTwoResponse> => {
+    return await apiClient.post<OnboardingStageTwoResponse>(
+      ApiRoutes.ONBOARDING_STAGE_TWO,
+      data
+    )
+  },
+
+  completeStageThree: async (data: OnboardingStageThreeRequest): Promise<OnboardingStageThreeResponse> => {
+    return await apiClient.post<OnboardingStageThreeResponse>(
+      ApiRoutes.ONBOARDING_STAGE_THREE,
+      data
+    );
+  },
+
+  registerUser: async (data: CreateUserRequest): Promise<CreateUserResponse> => {
+    return await apiClient.post<CreateUserResponse>(
+      ApiRoutes.REGISTER,
+      data
+    );
+  },
+
+  handleVeriffWebhook: async (data: VeriffWebhookRequest): Promise<VeriffWebhookResponse> => {
+    return await apiClient.post<VeriffWebhookResponse>(
+      ApiRoutes.VERIFF_WEBHOOK,
+      data
+    );
+  },
+
+  getVeriffStatus: async (sessionId: string): Promise<VeriffStatusResponse> => {
+    return await apiClient.get<VeriffStatusResponse>(
+      `${ApiRoutes.VERIFF_STATUS}/${sessionId}`
+    );
+  },
 
 };

@@ -71,27 +71,15 @@ export default function ProfileSetupScreen() {
             return;
         }
 
-        setLoading(true);
-
-        try {
-            // TODO: Implement profile setup logic
-            console.log('Setting up profile with:', {
+        // Pass data to next screen instead of making API call
+        navigation.navigate('CountrySetup', {
+            profileData: {
                 firstName,
                 lastName,
                 birthday,
                 selectedGender,
-            });
-
-            // Simulate API call
-            await new Promise(resolve => setTimeout(resolve, 1000));
-
-            // Navigate to next screen or main app
-            navigation.navigate('CountrySetup');
-        } catch (error) {
-            console.error('Profile setup error:', error);
-        } finally {
-            setLoading(false);
-        }
+            }
+        });
     };
 
     const calculateAge = (day, month, year) => {
