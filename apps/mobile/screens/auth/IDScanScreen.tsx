@@ -19,6 +19,7 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useCompleteStageThree } from "../../api/hooks/useOnboarding";
 
 const IDScanScreen = ({ navigation, route }) => {
 
@@ -26,6 +27,24 @@ const IDScanScreen = ({ navigation, route }) => {
     const handleBack = () => {
         navigation.goBack();
     }
+
+    // const veriffWebhook = useVeriffWebhook({
+    //     onSuccess: (response) => {
+    //         console.log('Webhook processed:', response);
+    //         // Handle verification status update
+    //     },
+    //     onError: (error) => {
+    //         console.error('Webhook error:', error);
+    //     },
+    // });
+
+    // Usage:
+    // await veriffWebhook.mutateAsync({
+    //   sessionId: 'veriff-session-id',
+    //   status: 'approved', // or 'declined', 'pending', etc.
+    //   person: { firstName: 'John', lastName: 'Doe' },
+    //   document: { type: 'PASSPORT', number: '123456789' }
+    // });
 
     return (
         <View className="flex-1 bg-black">
@@ -177,7 +196,7 @@ const IDScanScreen = ({ navigation, route }) => {
                     </View>
                     <Button
                         title='Accept & Continue'
-                        onPress={() => navigation.navigate('DocumentationVerification')} 
+                        onPress={() => navigation.navigate('DocumentationVerification')}
                         variant='primary'
                     // disabled={!isAccepted}
                     />

@@ -9,6 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -19,20 +20,59 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useCompleteStageThree } from "../../api/hooks/useOnboarding";
 
 const VerifyIndentity = ({ navigation, route }) => {
     const [isReady, setIsReady] = useState(false);
+    const [loading, setLoading] = useState(false);
 
 
-    const handleNext = () => {
 
-        // navigation.navigate('NextScreen', { userData: completeUserData });
-        navigation.navigate('ChooseVerify');
-    }
+    const completeStageThree = useCompleteStageThree({
+        onSuccess: (response) => {
+            console.log('Identity verification initiated:', response);
+            console.log('Veriff session ID:', response.session_id);
+            // Navigate to next screen with session_id
+            navigation.navigate('ChooseVerify', {
+                veriffSessionId: response.session_id
+            });
+        },
+        onError: (error) => {
+            console.error('Stage three error:', error);
+            Alert.alert('Error', error.message || 'Failed to start identity verification');
+            setLoading(false);
+        },
+    });
+
 
     const handleBack = () => {
         navigation.goBack();
     };
+
+    // Usage:
+    // await completeStageThree.mutateAsync({ user_id: 'some-uuid-here' });
+     const handleNext = async () => {
+        setLoading(true);
+        
+        try {
+            // nuk po di ku me marr
+            // const userId ...
+           
+            // if (userId) {
+            //     // This will trigger the onSuccess callback above
+                // await completeStageThree.mutateAsync({ 
+                //     user_id: userId 
+                // });
+            // } else {
+            //     Alert.alert('Error', 'User not found. Please sign in again.');
+            //     setLoading(false);
+            // }
+        } catch (error) {
+            console.error('Failed to start verification:', error);
+            setLoading(false);
+        }
+    };
+
 
     return (
         <View className="flex-1 bg-black">

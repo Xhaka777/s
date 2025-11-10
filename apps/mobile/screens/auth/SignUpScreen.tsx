@@ -24,6 +24,14 @@ import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
+import { useCompleteStageOne } from '../../api/hooks/useOnboarding';
+import { tokenStorage } from '../../api/services/tokenStorage';
+import { LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'This method is deprecated (as well as all React Native Firebase namespaced API)',
+  'onAuthStateChanged'
+]);
 
 // Debug utilities
 const debugFirebaseSetup = () => {
@@ -146,6 +154,7 @@ export default function SignUpScreen() {
   const [error, setError] = useState('');
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [apiCallMade, setApiCallMade] = useState(false);
 
   // Phone verification states
   const [confirm, setConfirm] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
@@ -157,6 +166,25 @@ export default function SignUpScreen() {
   const [currentOtpIndex, setCurrentOtpIndex] = useState(0);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
+  // Add this after your existing useState declarations
+  const completeStageOne = useCompleteStageOne({
+    onSuccess: async (response) => {
+      console.log('Onboarding success:', response);
+      if (response.success && response.token) {
+        // Save token securely
+        await tokenStorage.saveToken(response.token);
+        // Alert.alert('Success!', response.message);
+        setShowSuccessModal(true);
+      } else {
+        // Alert.alert('Info', response.message);
+      }
+    },
+    onError: (error) => {
+      console.error('Onboarding error:', error);
+      // Alert.alert('Error', error.message || 'Failed to complete onboarding');
+    },
+  });
+
   // Debug Firebase setup on component mount
   useEffect(() => {
     debugFirebaseSetup();
@@ -167,7 +195,7 @@ export default function SignUpScreen() {
   useEffect(() => {
     const authInstance = getAuth();
     const subscriber = authInstance.onAuthStateChanged(async (user) => {
-      if (user) {
+      if (user && step === 'verification' && !apiCallMade) {
         console.log('🎉 === REAL USER AUTHENTICATION SUCCESS ===');
         console.log('✅ User signed in successfully:', user.uid);
         console.log('📱 Phone number:', user.phoneNumber);
@@ -176,14 +204,18 @@ export default function SignUpScreen() {
         console.log('🔄 Last sign in:', user.metadata.lastSignInTime);
 
         try {
+
+          setApiCallMade(true);
           // Get the Firebase ID Token for backend authentication
           const idToken = await user.getIdToken();
           const idTokenResult = await user.getIdTokenResult();
 
           console.log('🔐 === FIREBASE AUTH TOKEN INFO ===');
-          console.log('📝 ID Token (send this to backend):', idToken);
-          console.log('📊 Token Claims:', idTokenResult.claims);
-          console.log('⏰ Token Expiration:', new Date(idTokenResult.expirationTime));
+          console.log('📝 ID Token (send this to backend):');
+          console.log(idToken); // Log token on separate line for clarity
+          console.log('📊 Token Claims:', JSON.stringify(idTokenResult.claims, null, 2));
+          console.log('⏰ Token Expiration Time:', idTokenResult.expirationTime);
+          console.log('⏰ Token Expiration Date:', new Date(idTokenResult.expirationTime));
           console.log('🆔 User UID:', user.uid);
           console.log('📞 Verified Phone:', user.phoneNumber);
           console.log('📧 Email:', user.email || 'No email');
@@ -200,10 +232,16 @@ export default function SignUpScreen() {
             lastSignInTime: user.metadata.lastSignInTime,
           };
 
-          console.log('📤 Auth data to send to backend:', authData);
+          console.log('📤 Auth data to send to backend:', JSON.stringify(authData, null, 2));
 
-          // TODO: Send to your backend API
-          // await apiService.registerUser(authData);
+          // const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
+
+          // await completeStageOne.mutateAsync({
+          //   email: email,
+          //   phone_e164: verifiedPhone,
+          //   preferred_language: 'en',
+          //   firebase_id_token: idToken,
+          // });
 
         } catch (error) {
           console.error('❌ Error getting ID token:', error);
@@ -213,7 +251,7 @@ export default function SignUpScreen() {
       }
     });
     return subscriber;
-  }, []);
+  }, [email, phoneNumber, countryCode, completeStageOne, step, apiCallMade]);
 
   const formatPhoneNumber = (countryCode: string, phoneNumber: string) => {
     const cleanPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
@@ -420,12 +458,23 @@ export default function SignUpScreen() {
 
       const credential = await confirm.confirm(codeToVerify);
 
+      const user = credential?.user;
       console.log('🎉 === VERIFICATION SUCCESS ===');
       console.log('✅ User credential:', !!credential);
-      console.log('👤 User:', credential.user?.uid);
-      console.log('📱 Phone number verified:', credential.user?.phoneNumber);
+      // console.log('👤 User:', credential.user?.uid);
+      // console.log('📱 Phone number verified:', credential.user?.phoneNumber);
 
       // The onAuthStateChanged listener will handle the rest
+      const verifiedPhone = user?.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
+      const idToken = await user?.getIdToken();
+
+
+      await completeStageOne.mutateAsync({
+        email: email,
+        phone_e164: verifiedPhone,
+        preferred_language: 'en',
+        firebase_id_token: idToken,
+      });
 
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -474,42 +523,6 @@ export default function SignUpScreen() {
     await handleSendVerificationCode();
   };
 
-// interface SignupRequest {
-//   email: string;
-//   phone_e164: string;
-//   preferred_language: string;
-//   firebase_session_token: string;
-// }
-
-//   const handleSignup = async () => {
-//   // Validate inputs
-//   if (!ValidationUtils.isValidEmail(email)) {
-//     setError('Invalid email format');
-//     return;
-//   }
-
-//   // Format phone number
-//   const phoneData = PhoneUtils.parsePhoneNumber(countryCode, phoneNumber);
-
-//   // Prepare signup data
-//   const signupData: SignupRequest = {
-//     email: email,
-//     phone_e164: phoneData.e164Format,
-//     preferred_language: 'en',
-//     firebase_session_token: await FirebaseUtils.getSessionToken(),
-//   };
-
-//   // Make API call
-//   const response = await authService.signup(signupData);
-  
-//   if (response.error) {
-//     setError(response.error.message);
-//   } else {
-//     // Handle success
-//     console.log('Signup successful:', response.data);
-//   }
-// };
-
   const renderOtpInputs = () => {
     return (
       <View className="flex-row justify-between items-center my-5 px-0">
@@ -557,17 +570,6 @@ export default function SignUpScreen() {
         <View className="gap-4">
           {/* <Text className="text-base font-medium text-white" style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>Email Address</Text> */}
           <View className="">
-            {/* <TextInput
-              className="text-sm text-white h-full"
-              style={{ fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}
-              value={email}
-              onChangeText={setEmail}
-              placeholder="Enter your email"
-              placeholderTextColor="#666666"
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            /> */}
             <Input
               label="Enter your email"
               required

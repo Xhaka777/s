@@ -9,14 +9,19 @@ import {
     KeyboardAvoidingView,
     Platform,
     FlatList,
+    Alert,
 } from 'react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { Button, GlowBackground, SecUnion } from '../../components';
 import { Search, ArrowLeft } from 'lucide-react-native';
 import { cities, countries, searchCities, searchCountries, getCountryByCity } from '../../location-data';
 import Input from '../../components/Input';
+import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
 
 const CountrySetupScreen = ({ navigation, route }) => {
+
+    const profileData = route?.params?.profileData || {};
+
     const [city, setCity] = useState('');
     const [country, setCountry] = useState('');
     const [selectedCity, setSelectedCity] = useState(null);
@@ -90,17 +95,53 @@ const CountrySetupScreen = ({ navigation, route }) => {
         setShowCountryDropdown(true);
     };
 
-    const handleNext = () => {
+    const completeStageTwo = useCompleteStageTwo({
+        onSuccess: (response) => {
+            console.log('Stage Two success:', response);
+            navigation.navigate('VerifyIdentity'); // or next screen
+        },
+        onError: (error) => {
+            console.error('Stage Two error:', error);
+            Alert.alert('Error', error.message || 'Failed to complete profile setup');
+        },
+    });
+
+
+    const handleNext = async () => {
         if (selectedCity && selectedCountry) {
             const completeUserData = {
-                ...userData,
-                city: selectedCity,
-                country: selectedCountry
+                first_name: profileData.firstName,
+                last_name: profileData.lastName,
+                dob: formatDateToYYYYMMDD(profileData.birthday),
+                gender: mapGenderForAPI(profileData.selectedGender),
+                city: selectedCity.name,
+                country: selectedCountry.name
             };
-            console.log('Complete user data:', completeUserData);
-            // navigation.navigate('NextScreen', { userData: completeUserData });
-            navigation.navigate('VerifyIdentity');
+            try {
+                await completeStageTwo.mutateAsync(completeUserData);
+            } catch (error) {
+                console.error('API call failed:', error);
+            }
         }
+    };
+
+    const formatDateToYYYYMMDD = (ddmmyyyy: string) => {
+        if (!ddmmyyyy) return '';
+        const [day, month, year] = ddmmyyyy.split('/');
+        return `${year}-${month}-${day}`;
+    };
+
+    const mapGenderForAPI = (frontendGender: string | undefined): 'male' | 'female' | 'other' | 'prefer_not_to_say' => {
+        if (!frontendGender) return 'prefer_not_to_say';
+        const g = frontendGender.toLowerCase();
+
+        if (g === 'women' || g === 'woman' || g === 'female') return 'female';
+        if (g === 'men' || g === 'man' || g === 'male') return 'male';
+        if (g === 'other') return 'other';
+        if (g === 'prefer_not_to_say' || g === 'prefer not to say') return 'prefer_not_to_say';
+
+        // default fallback to a valid union value
+        return 'prefer_not_to_say';
     };
 
     const handleBack = () => {
@@ -166,19 +207,19 @@ const CountrySetupScreen = ({ navigation, route }) => {
                         <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
                     </Svg>
 
-                  {/* Glow background effect */}
-                  <View
-                      className="absolute"
-                      style={{
-                          left: 2,
-                          top: 100,
-                          width: 524,
-                          height: 237,
-                          zIndex: 1,
-                      }}
-                  >
-                      <SecUnion />
-                  </View>
+                    {/* Glow background effect */}
+                    <View
+                        className="absolute"
+                        style={{
+                            left: 2,
+                            top: 100,
+                            width: 524,
+                            height: 237,
+                            zIndex: 1,
+                        }}
+                    >
+                        <SecUnion />
+                    </View>
                 </View>
 
                 {/* Content Layer - Normal flow on top */}
