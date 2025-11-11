@@ -1849,6 +1849,8 @@ PODS:
     - React-RCTFBReactNativeSpec
     - ReactCommon/turbomodule/core
     - SocketRocket
+  - react-native-biometrics (3.0.1):
+    - React-Core
   - react-native-blur (4.4.1):
     - boost
     - DoubleConversion
@@ -3063,6 +3065,7 @@ DEPENDENCIES:
   - React-logger (from `../node_modules/react-native/ReactCommon/logger`)
   - React-Mapbuffer (from `../node_modules/react-native/ReactCommon`)
   - React-microtasksnativemodule (from `../node_modules/react-native/ReactCommon/react/nativemodule/microtasks`)
+  - react-native-biometrics (from `../node_modules/react-native-biometrics`)
   - "react-native-blur (from `../node_modules/@react-native-community/blur`)"
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-sdk (from `../node_modules/@veriff/react-native-sdk`)"
@@ -3212,6 +3215,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon"
   React-microtasksnativemodule:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/microtasks"
+  react-native-biometrics:
+    :path: "../node_modules/react-native-biometrics"
   react-native-blur:
     :path: "../node_modules/@react-native-community/blur"
   react-native-safe-area-context:
@@ -3358,6 +3363,7 @@ SPEC CHECKSUMS:
   React-logger: 30adf849117e87cf86e88dca1824bb0f18f87e10
   React-Mapbuffer: 2a5edca6905cb1b3a40fb7ed3f4496df4f1bc60e
   React-microtasksnativemodule: 6d775fdf71445f58dbedbd66ed9cb08b48ae2797
+  react-native-biometrics: 43ed5b828646a7862dbc7945556446be00798e7d
   react-native-blur: b83ffbc5380d8bd2f06804b4b0e848be3507e65c
   react-native-safe-area-context: 0a3b034bb63a5b684dd2f5fffd3c90ef6ed41ee8
   react-native-sdk: c66b01d0de28d67e462e6b99dbc57193787f97d1

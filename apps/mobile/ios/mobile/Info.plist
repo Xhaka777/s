@@ -34,6 +34,8 @@
 		<string>Poppins-Bold.ttf</string>
 		<string>Poppins-Light.ttf</string>
 	</array>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID for secure and convenient authentication to access your account.</string>
 	<!-- ADD THESE FOR VERIFF -->
 	<key>NSCameraUsageDescription</key>
 	<string>We need camera access to verify your identity and keep our dating community safe</string>
