@@ -21,6 +21,7 @@ import {
 } from '../schema/onboarding';
 import { tokenStorage } from '../services/tokenStorage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { VERIFF_STATUS, VeriffUtils } from '../../utils/VeriffUtils';
 
 // Query Keys
 export const onboardingKeys = {
@@ -31,6 +32,7 @@ export const onboardingKeys = {
   questionnaireTemplate: () => [...onboardingKeys.all, 'questionnaireTemplate'] as const,
   questionnaireDraft: () => [...onboardingKeys.all, 'questionnaireDraft'] as const,
   verification: (id: string) => [...onboardingKeys.all, 'verification', id] as const,
+  veriffStatus: (sessionId: string) => [...onboardingKeys.all, 'veriff', sessionId] as const,
 } as const;
 
 // Complete Stage One
@@ -71,9 +73,15 @@ export const useCompleteStageThree = (
 
   return useMutation({
     mutationFn: (data: OnboardingStageThreeRequest) => onboardingService.completeStageThree(data),
-    onSuccess: (response) => {
-      // Note: Stage 3 returns session_id (for Veriff), not session_token
-      // no need to... update tokenStorage here
+    onSuccess: async (response) => {
+      if (response.success && response.session_id) {
+        // Store the Veriff session ID for later use
+        await VeriffUtils.saveSessionId(response.session_id);
+        console.log('Stage Three completed - Veriff session created:', response.session_id);
+      }
+    },
+    onError: (error) => {
+      console.error('Stage Three failed:', error);
     },
     ...options,
   });
@@ -95,6 +103,7 @@ export const useRegisterUser = (
   });
 };
 
+
 export const useVeriffWebhook = (
   options?: UseMutationOptions<VeriffWebhookResponse, Error, VeriffWebhookRequest>
 ) => {
@@ -102,10 +111,10 @@ export const useVeriffWebhook = (
 
   return useMutation({
     mutationFn: (data: VeriffWebhookRequest) => onboardingService.handleVeriffWebhook(data),
-    onSuccess: (response) => {
+    onSuccess: async (response) => {
       console.log('Veriff webhook processed:', response);
       // Invalidate session/onboarding queries since verification status may have changed
-      queryClient.invalidateQueries({ queryKey: ['onboarding'] });
+      queryClient.invalidateQueries({ queryKey: onboardingKeys.all });
     },
     ...options,
   });
@@ -116,16 +125,75 @@ export const useVeriffStatus = (
   options?: UseQueryOptions<VeriffStatusResponse, Error>
 ) => {
   return useQuery({
-    queryKey: ['veriff-status', sessionId],
-    queryFn: () => onboardingService.getVeriffStatus(sessionId),
+    queryKey: onboardingKeys.veriffStatus(sessionId),
+    queryFn: async () => {
+      const response = await onboardingService.getVeriffStatus(sessionId);
+      
+      // Save the latest status to AsyncStorage
+      if (response.status) {
+        await VeriffUtils.saveVerificationStatus(response.status);
+      }
+      
+      return response;
+    },
     enabled: !!sessionId, // Only run query if sessionId exists
-    refetchInterval: (data) => {
-      // Poll every 5 seconds if status is still pending
-      if (data?.status === 'pending' || data?.status === 'processing') {
+    staleTime: 10000, // Consider data stale after 10 seconds
+    refetchInterval: (data, query) => {
+      // Poll every 5 seconds if status is still pending/processing
+      if (data?.status === VERIFF_STATUS.PENDING || data?.status === VERIFF_STATUS.PROCESSING) {
         return 5000;
       }
       return false; // Stop polling when complete
     },
+    refetchIntervalInBackground: false, // Don't poll in background
+    retry: (failureCount, error) => {
+      // Don't retry more than 3 times
+      if (failureCount >= 3) return false;
+      
+      // Don't retry on 404 (session not found)
+      if (error.message?.includes('404')) return false;
+      
+      return true;
+    },
     ...options,
   });
+};
+
+export const useStoredVeriffSession = () => {
+  return useQuery({
+    queryKey: ['stored-veriff-session'],
+    queryFn: () => VeriffUtils.getSessionId(),
+    staleTime: Infinity, // Don't refetch unless manually invalidated
+  });
+};
+
+// Hook to get stored verification status
+export const useStoredVerificationStatus = () => {
+  return useQuery({
+    queryKey: ['stored-verification-status'],
+    queryFn: () => VeriffUtils.getVerificationStatus(),
+    staleTime: 30000, // Consider stale after 30 seconds
+  });
+};
+
+// Custom hook for complete verification flow
+export const useVerificationFlow = () => {
+  const queryClient = useQueryClient();
+  
+  const clearVerificationData = async () => {
+    await VeriffUtils.clearSessionId();
+    await AsyncStorage.removeItem('@verification_status');
+    queryClient.invalidateQueries({ queryKey: ['stored-veriff-session'] });
+    queryClient.invalidateQueries({ queryKey: ['stored-verification-status'] });
+  };
+
+  const resetVerificationFlow = async () => {
+    await clearVerificationData();
+    queryClient.invalidateQueries({ queryKey: onboardingKeys.all });
+  };
+
+  return {
+    clearVerificationData,
+    resetVerificationFlow,
+  };
 };
