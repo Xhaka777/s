@@ -6,7 +6,7 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import TermsAndConditions from '../screens/auth/TermsAndConditions';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
-import { CountrySetupScreen, DocumentVerification, IDScanScreen, WelcomeQuestionnaire } from '../screens/auth';
+import { CategoryQuestionsScreen, CountrySetupScreen, DocumentVerification, IDScanScreen, OrderAnswersScreen, WelcomeQuestionnaire } from '../screens/auth';
 import VerifyIndentity from '../screens/auth/VerifyIdentityScreen';
 import ChooseVerify from '../screens/auth/ChooseVerifyScreen';
 import VerifiedSuccess from '../screens/auth/VerifiedSuccessScreen';
@@ -30,6 +30,8 @@ export type AuthStackParamList = {
   //
   WelcomeQuestionnaire: undefined;
   SpoonedQuestionnaire: undefined;
+  CategoryQuestions: undefined;
+  OrderAnswers: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -58,6 +60,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="VerificationFailed" component={VerificationFailed} />
       <Stack.Screen name="WelcomeQuestionnaire" component={WelcomeQuestionnaire} />
       <Stack.Screen name="SpoonedQuestionnaire" component={SpoonedQuestionnaire} />
+      <Stack.Screen name="CategoryQuestions" component={CategoryQuestionsScreen} />
+      <Stack.Screen name='OrderAnswers' component={OrderAnswersScreen} />
     </Stack.Navigator>
   );
 }

@@ -16,8 +16,38 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import LinearGradient from 'react-native-linear-gradient';
+import QuestionnaireCategory from "../../../components/QuestionnaireCategory"; // Adjust path as needed
 
 const SpoonedQuestionnaire = ({ navigation, route }) => {
+    const [selectedCategories, setSelectedCategories] = useState([]);
+
+    const categories = [
+        "Partnership and relationship",
+        "Goals and expectations",
+        "Personal interests and preferences",
+        "Children and family",
+        "Interests and habits",
+        "Religion and worldview",
+        "Economic and political values",
+        "No-gos in a relationship",
+        "Future"
+    ];
+
+    const handleCategoryPress = (category) => {
+        // Toggle selection state
+        setSelectedCategories(prev => {
+            if (prev.includes(category)) {
+                return prev.filter(item => item !== category);
+            } else {
+                return [...prev, category];
+            }
+        });
+        
+        console.log('Selected category:', category);
+        // You can navigate to specific questionnaire sections or handle state
+        // navigation.navigate('CategoryQuestions', { category });
+        navigation.navigate('CategoryQuestions');
+    };
 
     return (
         <View className="flex-1 bg-black">
@@ -101,8 +131,16 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
                                     </View>
                                 </View>
 
-                                <View className="w-full flex-col justify-start items-start gap-6">
-
+                                {/* Categories Section */}
+                                <View className="w-full flex-col justify-start items-start gap-4">
+                                    {categories.map((category, index) => (
+                                        <QuestionnaireCategory
+                                            key={index}
+                                            title={category}
+                                            onPress={() => handleCategoryPress(category)}
+                                            isSelected={selectedCategories.includes(category)}
+                                        />
+                                    ))}
                                 </View>
                             </View>
                         </View>
