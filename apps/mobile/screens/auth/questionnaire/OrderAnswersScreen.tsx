@@ -22,30 +22,32 @@ const OrderAnswersScreen = ({ navigation, route }) => {
     const routeParams = route && route.params ? route.params : {};
     const passedSelectedAnswers = routeParams.selectedAnswers || [];
     const category = routeParams.category || "Partnership and Relationship";
-    
+    const returnRoute = routeParams.returnRoute || 'SpoonedQuestionnaire';
+    const completedCategory = routeParams.completedCategory || category;
+
     const [isScrolledToEnd, setIsScrolledToEnd] = useState(true);
     const [showCongratulationsModal, setShowCongratulationsModal] = useState(false);
-    
+
     // All available answers
     const allAnswers = [
         "Creativity and flexibility",
-        "Self-realization and autonomy", 
+        "Self-realization and autonomy",
         "Reliability and a sense of responsibility",
         "Curiosity and a thirst for adventure",
         "Safety and durability",
         "Order and structure"
     ];
-    
+
     // State for which answers are selected (max 3)
     const [selectedAnswers, setSelectedAnswers] = useState(
-        passedSelectedAnswers.length > 0 
+        passedSelectedAnswers.length > 0
             ? allAnswers.map(answer => passedSelectedAnswers.includes(answer))
             : new Array(allAnswers.length).fill(false)
     );
-    
+
     // State for ordering mode
     const [isOrderingMode, setIsOrderingMode] = useState(false);
-    
+
     // State for ordered items (only for the selected answers)
     const [orderedItems, setOrderedItems] = useState([]);
 
@@ -66,10 +68,10 @@ const OrderAnswersScreen = ({ navigation, route }) => {
     // Handle answer selection
     const handleAnswerSelect = (index) => {
         if (isOrderingMode) return; // Don't allow selection in ordering mode
-        
+
         const newSelectedAnswers = [...selectedAnswers];
         const selectedCount = selectedAnswers.filter(Boolean).length;
-        
+
         if (selectedAnswers[index]) {
             // Deselect
             newSelectedAnswers[index] = false;
@@ -81,7 +83,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
             Alert.alert("Maximum reached", "You can only select 3 answers.");
             return;
         }
-        
+
         setSelectedAnswers(newSelectedAnswers);
     };
 
@@ -133,12 +135,14 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                 text: item.text,
                 order: item.order,
             }));
-            
+
             console.log('Final ordered answers:', finalOrder);
-            
-            // Navigate back safely
-            if (navigation && navigation.goBack) {
-                navigation.goBack();
+
+            // Navigate back to the questionnaire with completion status
+            if (navigation) {
+                navigation.navigate(returnRoute, {
+                    completedCategory: completedCategory
+                });
             }
         }
     };
@@ -176,7 +180,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                 className="w-full mb-3"
             >
                 <View className="relative">
-                    <View 
+                    <View
                         style={{
                             opacity: isActive ? 0.8 : 1,
                             transform: isActive ? [{ scale: 1.02 }] : [{ scale: 1 }],
@@ -185,7 +189,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                         <AnswerOption
                             text={item.text}
                             isSelected={true} // Show as selected in ordering mode
-                            onPress={() => {}} // Disable press, only drag works
+                            onPress={() => { }} // Disable press, only drag works
                             disabled={false}
                         />
                     </View>
@@ -200,7 +204,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
     return (
         <View className="flex-1 bg-black">
             <StatusBar barStyle='light-content' backgroundColor='#000000' />
-            
+
             {/* Background gradient */}
             <View className="absolute inset-0 z-0">
                 <Svg height="50%" width="100%" className="absolute top-0 left-0">
@@ -228,13 +232,13 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                     >
                         <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
                     </TouchableOpacity>
-                    
+
                     <View className="flex-1 items-center">
                         <Text className="text-white text-base font-PoppinsSemibold">
                             Order answers
                         </Text>
                     </View>
-                    
+
                     <View className="w-8" />
                 </View>
 
@@ -249,14 +253,14 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                                 </Text>
                                 <View className="flex-col gap-4">
                                     <Text className="text-white text-base font-Poppins leading-6">
-                                        {isOrderingMode 
-                                            ? "Please drag to order your selected answers by importance." 
+                                        {isOrderingMode
+                                            ? "Please drag to order your selected answers by importance."
                                             : "Can you please select the answers that matter most to you."
                                         }
                                     </Text>
                                 </View>
                                 <Text className="text-gray-400 text-xs font-Poppins leading-4">
-                                    {isOrderingMode 
+                                    {isOrderingMode
                                         ? "(drag to reorder - most important first)"
                                         : `(choose exactly 3 answers - ${selectedCount}/3 selected)`
                                     }
@@ -269,7 +273,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                     <View className="flex-1 px-5">
                         {!isOrderingMode ? (
                             // Selection Mode
-                            <ScrollView 
+                            <ScrollView
                                 showsVerticalScrollIndicator={false}
                                 contentContainerStyle={{ paddingBottom: 20 }}
                                 onScroll={(event) => {
@@ -315,7 +319,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                 </View>
 
                 {/* Fixed Bottom Navigation */}
-                <View 
+                <View
                     className="flex-row justify-start items-center gap-4 px-5 py-4 bg-black"
                     style={{
                         borderTopWidth: 1,
@@ -328,7 +332,7 @@ const OrderAnswersScreen = ({ navigation, route }) => {
                         onPress={handleGoBack}
                         style={{ flex: 1 }}
                     />
-                    
+
                     <Button
                         title={isOrderingMode ? "Done" : "Finish"}
                         variant="primary"

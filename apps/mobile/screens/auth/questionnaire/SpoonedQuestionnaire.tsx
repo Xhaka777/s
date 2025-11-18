@@ -20,6 +20,21 @@ import QuestionnaireCategory from "../../../components/QuestionnaireCategory"; /
 
 const SpoonedQuestionnaire = ({ navigation, route }) => {
     const [selectedCategories, setSelectedCategories] = useState([]);
+    
+    // Track category progress (0-100) and completion status
+    const [categoryProgress, setCategoryProgress] = useState({
+        "Partnership and relationship": 0,
+        "Goals and expectations": 10,
+        "Personal interests and preferences": 30,
+        "Children and family": 0,
+        "Interests and habits": 0,
+        "Religion and worldview": 0,
+        "Economic and political values": 0,
+        "No-gos in a relationship": 0,
+        "Future": 0
+    });
+    
+    const [completedCategories, setCompletedCategories] = useState([]);
 
     const categories = [
         "Partnership and relationship",
@@ -33,6 +48,30 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
         "Future"
     ];
 
+    // Check if returning from completed category
+    useEffect(() => {
+        if (route?.params?.completedCategory) {
+            const completedCategory = route.params.completedCategory;
+            
+            // Mark category as completed
+            setCompletedCategories(prev => {
+                if (!prev.includes(completedCategory)) {
+                    return [...prev, completedCategory];
+                }
+                return prev;
+            });
+            
+            // Set progress to 100% for completed category
+            setCategoryProgress(prev => ({
+                ...prev,
+                [completedCategory]: 100
+            }));
+
+            // Clear the route params to prevent re-triggering
+            navigation.setParams({ completedCategory: null });
+        }
+    }, [route?.params?.completedCategory]);
+
     const handleCategoryPress = (category) => {
         // Toggle selection state
         setSelectedCategories(prev => {
@@ -44,9 +83,11 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
         });
         
         console.log('Selected category:', category);
-        // You can navigate to specific questionnaire sections or handle state
-        // navigation.navigate('CategoryQuestions', { category });
-        navigation.navigate('CategoryQuestions');
+        // Navigate to category questions and pass the category name
+        navigation.navigate('CategoryQuestions', { 
+            category: category,
+            returnRoute: 'SpoonedQuestionnaire' // So we know where to return
+        });
     };
 
     return (
@@ -139,6 +180,8 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
                                             title={category}
                                             onPress={() => handleCategoryPress(category)}
                                             isSelected={selectedCategories.includes(category)}
+                                            isCompleted={completedCategories.includes(category)}
+                                            progress={categoryProgress[category] || 0}
                                         />
                                     ))}
                                 </View>

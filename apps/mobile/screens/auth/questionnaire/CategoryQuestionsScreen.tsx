@@ -24,9 +24,13 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
     const [currentStep, setCurrentStep] = useState(1);
     const [isScrolledToEnd, setIsScrolledToEnd] = useState(true);
 
+    // Get category from route params - THIS IS THE KEY FIX
+    const currentCategory = route?.params?.category || "Partnership and relationship";
+    const returnRoute = route?.params?.returnRoute || 'SpoonedQuestionnaire';
+
     const questionSteps = {
         1: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "Do their habits match yours? You go first.",
             currentStep: "01",
             totalSteps: "06",
@@ -39,7 +43,7 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             hasSkip: true
         },
         2: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "Would a large age difference to your partner be a problem?",
             currentStep: "02",
             totalSteps: "06",
@@ -51,7 +55,7 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             hasSkip: false
         },
         3: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "Would you be willing to relocate for a partnership?",
             currentStep: "03",
             totalSteps: "06",
@@ -63,7 +67,7 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             hasSkip: false
         },
         4: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "How important is your partner's appearance to you?",
             currentStep: "04",
             totalSteps: "06",
@@ -75,7 +79,7 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             hasSkip: false
         },
         5: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "How important is sexuality to you in a relationship?",
             currentStep: "05",
             totalSteps: "06",
@@ -87,7 +91,7 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             hasSkip: false
         },
         6: {
-            category: "Partnership and Relationship",
+            category: currentCategory,
             question: "What qualities are important to you in your partner?",
             subtitle: "(choose the 3 most important for you)",
             currentStep: "06",
@@ -144,12 +148,15 @@ const CategoryQuestionsScreen = ({ navigation, route }) => {
             setSkipQuestions(false);
             setCurrentStep(currentStep + 1);
         } else {
-            // Final step - handle completion
+            // Final step - handle completion - THIS IS THE CRITICAL FIX
             console.log(`Final step answers:`, selectedAnswers);
-            console.log('Questionnaire completed');
+            console.log('Questionnaire completed for category:', currentCategory);
+            
             navigation.navigate('OrderAnswers', {
                 selectedAnswers: selectedAnswers.map(index => currentQuestionData.options[index]),
-                category: currentQuestionData.category
+                category: currentCategory, // Use currentCategory, not currentQuestionData.category
+                returnRoute: returnRoute,
+                completedCategory: currentCategory // THIS WAS MISSING!
             });
         }
     };
