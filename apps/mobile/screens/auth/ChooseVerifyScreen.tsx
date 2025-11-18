@@ -9,6 +9,7 @@ import {
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
@@ -19,32 +20,126 @@ import { useLanguage } from "../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useVeriffStatus } from "../../api/hooks/useOnboarding";
+import { Veriff } from '@veriff/react-native-sdk';
 
 const ChooseVerify = ({ navigation, route }) => {
     const [isReady, setIsReady] = useState(false);
     const [selectedOption, setSelectedOption] = useState(null);
+    const [veriffSessionId, setVeriffSessionId] = useState(route?.params?.veriffSessionId || null);
 
-    const handleNext = () => {
+    // Poll Veriff status
+    const { data: veriffStatus, isLoading: isPolling } = useVeriffStatus(
+        veriffSessionId,
+        {
+            enabled: !!veriffSessionId,
+            onSuccess: (data) => {
+                if (data.status === 'approved') {
+                    Alert.alert(
+                        'Verification Successful',
+                        'Your identity has been verified successfully!',
+                        [
+                            {
+                                text: 'Continue',
+                                onPress: () => navigation.navigate('NextScreen') // Navigate to your next screen
+                            }
+                        ]
+                    );
+                } else if (data.status === 'declined') {
+                    Alert.alert(
+                        'Verification Failed',
+                        'Your identity verification was unsuccessful. Please try again or contact support.',
+                        [
+                            {
+                                text: 'Try Again',
+                                onPress: () => setVeriffSessionId(null)
+                            }
+                        ]
+                    );
+                }
+            }
+        }
+    );
 
-    }
+    useEffect(() => {
+        if (route?.params?.veriffSessionId) {
+            setVeriffSessionId(route.params.veriffSessionId);
+        }
+    }, [route?.params?.veriffSessionId]);
 
     const handleBack = () => {
         navigation.goBack();
-    }
+    };
+
+    const startVeriffVerification = async () => {
+        if (!veriffSessionId) {
+            Alert.alert('Error', 'No verification session available. Please try again.');
+            return;
+        }
+
+        try {
+            const veriffConfiguration = {
+                sessionId: veriffSessionId,
+                // Optional configuration
+                locale: 'en', // or get from your language context
+                theme: 'dark', // to match your app theme
+            };
+
+            // Start Veriff verification
+            const result = await Veriff.start(veriffConfiguration);
+            
+            console.log('Veriff verification result:', result);
+
+            // Handle the result
+            if (result.status === 'DONE') {
+                // Verification completed - poll for final status
+                console.log('Verification completed, waiting for final result...');
+            } else if (result.status === 'CANCELED') {
+                console.log('Verification was canceled by user');
+                Alert.alert(
+                    'Verification Canceled',
+                    'You canceled the verification process. You can try again anytime.',
+                    [
+                        {
+                            text: 'OK',
+                            onPress: () => navigation.goBack()
+                        }
+                    ]
+                );
+            } else if (result.status === 'ERROR') {
+                console.error('Verification error:', result.error);
+                Alert.alert(
+                    'Verification Error',
+                    'There was an error during verification. Please try again.',
+                    [
+                        {
+                            text: 'Try Again',
+                            onPress: () => startVeriffVerification()
+                        }
+                    ]
+                );
+            }
+
+        } catch (error) {
+            console.error('Failed to start Veriff verification:', error);
+            Alert.alert(
+                'Error',
+                'Failed to start verification. Please check your connection and try again.'
+            );
+        }
+    };
 
     const handleIDPhoto = () => {
         setSelectedOption('id');
-        // Navigate to ID photo capture screen
-        navigation.navigate('IDScan');
-        console.log("Take ID photo pressed");
-    }
+        // Start Veriff verification flow
+        startVeriffVerification();
+    };
 
     const handleSelfie = () => {
         setSelectedOption('selfie');
-        // Navigate to selfie capture screen
-        console.log("Take selfie pressed");
-    }
-
+        // Start Veriff verification flow (Veriff handles both ID and selfie)
+        startVeriffVerification();
+    };
 
     return (
         <View className="flex-1 bg-black">
@@ -69,12 +164,11 @@ const ChooseVerify = ({ navigation, route }) => {
                 <View
                     className="absolute"
                     style={{
-                        left: -20,           // X position from Figma
-                        top: 322,            // Y position from Figma  
-                        width: 524,          // Width from Figma
-                        height: 237,         // Height from Figma
-                        // transform: [{ rotate: '9.68deg' }], // Rotation from Figma
-                        zIndex: 1,           // Above blur but below content
+                        left: -20,
+                        top: 322,
+                        width: 524,
+                        height: 237,
+                        zIndex: 1,
                     }}
                 >
                     <ThirdUnion />
@@ -95,6 +189,7 @@ const ChooseVerify = ({ navigation, route }) => {
                             <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
                         </TouchableOpacity>
                     </View>
+                    
                     <View className="flex-1 justify-center items-center gap-6">
                         <View className="w-full flex-col justify-start items-start gap-6">
                             <View className="w-full flex-col justify-center items-center gap-16">
@@ -110,23 +205,36 @@ const ChooseVerify = ({ navigation, route }) => {
 
                                     <View className="w-full justify-start">
                                         <Text className="text-sm leading-4">
-                                            <Text className="text-gray-400 text-base font-PoppinsMedium">Please submit the following documents </Text>
+                                            <Text className="text-gray-400 text-base font-PoppinsMedium">Please submit the following documents to </Text>
                                             <Text className="text-white text-base font-PoppinsMedium">verify your profile</Text>
                                         </Text>
                                     </View>
                                 </View>
 
-                                {/* I need to display those two here... */}
+                                {/* Show verification status if polling */}
+                                {isPolling && veriffSessionId && (
+                                    <View className="w-full p-4 bg-yellow-900/20 rounded-lg border border-yellow-600">
+                                        <Text className="text-yellow-400 text-center font-PoppinsMedium">
+                                            Verification in progress...
+                                        </Text>
+                                        <Text className="text-gray-400 text-center text-sm mt-1">
+                                            Status: {veriffStatus?.status || 'Processing'}
+                                        </Text>
+                                    </View>
+                                )}
+
+                                {/* Verification Options */}
                                 <View className="w-full flex-col justify-start items-start gap-4">
                                     {/* Take a picture of your ID */}
                                     <TouchableOpacity
-                                        className={`w-full p-2.5 bg-[#201E23] rounded-lg border flex-row justify-start items-start gap-5 ${selectedOption === 'id' ? 'border-primary' : 'border-gray-700'
-                                            }`}
+                                        className={`w-full p-2.5 bg-[#201E23] rounded-lg border flex-row justify-start items-start gap-5 ${
+                                            selectedOption === 'id' ? 'border-primary' : 'border-gray-700'
+                                        }`}
                                         onPress={handleIDPhoto}
                                         activeOpacity={0.7}
+                                        disabled={!veriffSessionId}
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
-                                            {/* ID Card Icon */}
                                             <Image
                                                 source={require('../../assets/icons/pic_id.png')}
                                                 className="w-[32px] h-[32px]"
@@ -138,23 +246,24 @@ const ChooseVerify = ({ navigation, route }) => {
                                                 Take a picture of your ID
                                             </Text>
                                             <Text className="text-gray-400 text-sm font-Poppins leading-4">
-                                                To check your personal informations
+                                                To check your personal information
                                             </Text>
                                         </View>
                                     </TouchableOpacity>
 
                                     {/* Take a selfie of yourself */}
                                     <TouchableOpacity
-                                        className={`w-full p-2.5 bg-[#201E23] rounded-lg border flex-row justify-start items-start gap-5 ${selectedOption === 'selfie' ? 'border-primary' : 'border-gray-700'
-                                            }`}
+                                        className={`w-full p-2.5 bg-[#201E23] rounded-lg border flex-row justify-start items-start gap-5 ${
+                                            selectedOption === 'selfie' ? 'border-primary' : 'border-gray-700'
+                                        }`}
                                         onPress={handleSelfie}
                                         activeOpacity={0.7}
+                                        disabled={!veriffSessionId}
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
-                                            {/* Camera/Selfie Icon - simplified camera frame */}
                                             <Image
                                                 source={require('../../assets/icons/face_recognition.png')}
-                                                className="w-[32px] h-[32px"
+                                                className="w-[32px] h-[32px]"
                                                 resizeMode="contain"
                                             />
                                         </View>
@@ -169,11 +278,22 @@ const ChooseVerify = ({ navigation, route }) => {
                                     </TouchableOpacity>
                                 </View>
 
-
+                                {/* No session ID warning */}
+                                {!veriffSessionId && (
+                                    <View className="w-full p-4 bg-red-900/20 rounded-lg border border-red-600">
+                                        <Text className="text-red-400 text-center font-PoppinsMedium">
+                                            Verification session not available
+                                        </Text>
+                                        <Text className="text-gray-400 text-center text-sm mt-1">
+                                            Please go back and try again
+                                        </Text>
+                                    </View>
+                                )}
                             </View>
                         </View>
                     </View>
                 </ScrollView>
+                
                 <View className="w-full pb-6 px-5 gap-4">
                     {/* Privacy Notice */}
                     <View className="flex-row justify-start items-start gap-2">
@@ -185,13 +305,13 @@ const ChooseVerify = ({ navigation, route }) => {
                             />
                         </View>
                         <Text className="flex-1 text-white text-base font-Poppins leading-4">
-                            We never share this anyone and it won't be on your profile!
+                            We never share this with anyone and it won't be on your profile!
                         </Text>
                     </View>
                 </View>
             </SafeAreaView>
         </View>
-    )
-}
+    );
+};
 
 export default ChooseVerify;

@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Dimensions,
   StatusBar,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +20,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import { Globe } from 'lucide-react-native';
 import { tokenStorage } from '../../api/services/tokenStorage';
 import { onboardingService } from '../../api/services/onboarding';
+import { biometricService } from '../../service/Biometricservice';
 
 const { width, height } = Dimensions.get('window');
 
@@ -28,6 +31,10 @@ export default function WelcomeScreen() {
   const { t } = useTranslation();
   const { currentLanguage, changeLanguage, availableLanguages } = useLanguage();
   const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometryType, setBiometryType] = useState<string | null>(null);
+  const [hasExistingSession, setHasExistingSession] = useState(false);
 
   // Get current language display info
   const currentLanguageInfo = availableLanguages.find(lang => lang.code === currentLanguage);
@@ -67,11 +74,48 @@ export default function WelcomeScreen() {
     console.log('Privacy Policy pressed');
   };
 
-  useEffect(() => {
-    checkUserSession();
-  }, []);
+  // Face ID Authentication Handler
+  const handleFaceIDAuthentication = async () => {
+    if (!biometricAvailable) {
+      Alert.alert(
+        'Face ID Not Available',
+        'Face ID is not available on this device. Please use the sign-in button.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
 
-  const checkUserSession = async () => {
+    setIsAuthenticating(true);
+
+    try {
+      const biometryDisplayName = biometricService.getBiometryDisplayName(biometryType);
+      const result = await biometricService.authenticate(
+        `Authenticate with ${biometryDisplayName} to access your account`
+      );
+
+      if (result.success) {
+        // Authentication successful - proceed with session check
+        console.log('Face ID authentication successful');
+        await proceedWithAuthentication();
+      } else {
+        // Authentication failed
+        if (result.error) {
+          biometricService.handleAuthenticationError(result.error);
+        }
+      }
+    } catch (error) {
+      console.error('Face ID authentication error:', error);
+      Alert.alert(
+        'Authentication Error',
+        'An error occurred during authentication. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const proceedWithAuthentication = async () => {
     try {
       const storedToken = await tokenStorage.getToken();
 
@@ -80,20 +124,104 @@ export default function WelcomeScreen() {
 
         if (sessionResponse.authenticated) {
           if (sessionResponse.onbordingCompleted) {
-            console.log('user authenticated & onboarding complete')
+            console.log('User authenticated & onboarding complete - proceeding to main app');
+            // Navigate to main app here
+            // navigation.navigate('MainApp');
           } else {
             const currentStep = sessionResponse.onboarding?.details?.currentStep;
-            //navigation.navigate(currentStep) ose qysh o logjika n'backend...
+            console.log('User authenticated but onboarding incomplete:', currentStep);
+            // Navigate to appropriate onboarding step
+            // navigation.navigate(currentStep);
+          }
+        } else {
+          console.log('Invalid session, showing sign-in options');
+          setShowWelcomeModal(true);
+        }
+      } else {
+        console.log('No stored session, showing sign-in options');
+        setShowWelcomeModal(true);
+      }
+    } catch (error) {
+      console.log('Session check error:', error);
+      await tokenStorage.clearToken();
+      Alert.alert(
+        'Session Error',
+        'There was an issue checking your session. Please sign in again.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
+  const checkBiometricAvailability = async () => {
+    try {
+      const availability = await biometricService.checkBiometricAvailability();
+      setBiometricAvailable(availability.available);
+      setBiometryType(availability.biometryType);
+
+      console.log('Biometric check result:', availability);
+    } catch (error) {
+      console.error('Error checking biometric availability:', error);
+      setBiometricAvailable(false);
+      setBiometryType(null);
+    }
+  };
+
+  const checkUserSession = async () => {
+    try {
+      const storedToken = await tokenStorage.getToken();
+      setHasExistingSession(!!storedToken);
+
+      if (storedToken) {
+        const sessionResponse = await onboardingService.checkSession(storedToken);
+
+        if (sessionResponse.authenticated) {
+          if (sessionResponse.onbordingCompleted) {
+            console.log('User authenticated & onboarding complete');
+            // If user has a valid session and biometrics are available, show Face ID prompt automatically
+            if (biometricAvailable) {
+              // Small delay to ensure UI is ready
+              setTimeout(() => {
+                handleFaceIDAuthentication();
+              }, 1000);
+            }
+          } else {
+            const currentStep = sessionResponse.onboarding?.details?.currentStep;
+            // Navigation logic for onboarding steps
           }
         } else {
           console.log('No stored session, showing welcome screen');
+          await tokenStorage.clearToken();
+          setHasExistingSession(false);
         }
       }
     } catch (error) {
       console.log('Session check error:', error);
       await tokenStorage.clearToken();
+      setHasExistingSession(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    // Check biometric availability first, then check user session
+    const initializeScreen = async () => {
+      await checkBiometricAvailability();
+      await checkUserSession();
+    };
+
+    initializeScreen();
+  }, []);
+
+  // Auto-trigger Face ID if user has existing session and biometrics are available
+  useEffect(() => {
+    if (biometricAvailable && hasExistingSession && !isAuthenticating) {
+      // Auto-trigger after a short delay when both conditions are met
+      const timer = setTimeout(() => {
+        handleFaceIDAuthentication();
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [biometricAvailable, hasExistingSession]);
 
   return (
     <View className="flex-1 bg-black">
@@ -120,7 +248,6 @@ export default function WelcomeScreen() {
           activeOpacity={0.8}
         >
           <View className="flex-row items-center gap-3">
-            {/* Globe Icon */}
             <View className="w-6 h-6 items-center justify-center">
               <Globe size={20} color="#FFFFFF" />
             </View>
@@ -128,11 +255,32 @@ export default function WelcomeScreen() {
               {displayLanguage}
             </Text>
             <Text className="text-white text-xl font-light">›</Text>
-            {/* Chevron Right */}
           </View>
-          {/* <View className="w-6 h-6 items-center justify-center"> */}
-          {/* </View> */}
         </TouchableOpacity>
+
+        {/* Face ID Button - Show when biometrics are available */}
+        {biometricAvailable && (
+          <TouchableOpacity
+            className="absolute z-10 bg-black/30 border border-white/30 rounded-full items-center justify-center"
+            style={{
+              top: 60,
+              right: 20,
+              width: 50,
+              height: 50,
+            }}
+            onPress={handleFaceIDAuthentication}
+            disabled={isAuthenticating}
+            activeOpacity={0.8}
+          >
+            {isAuthenticating ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text className="text-white text-lg">
+                {biometryType === 'FaceID' ? '🔐' : '👆'}
+              </Text>
+            )}
+          </TouchableOpacity>
+        )}
 
         {/* Main Content */}
         <View
@@ -156,10 +304,38 @@ export default function WelcomeScreen() {
             <Text className="text-xl font-Poppins text-white text-center tracking-wider">
               {t('welcome.tagline')}
             </Text>
+
+            {/* Biometric Status Indicator */}
+            {biometricAvailable && hasExistingSession && (
+              <Text className="text-sm text-white/80 text-center mt-2">
+                {isAuthenticating
+                  ? `Authenticating with ${biometricService.getBiometryDisplayName(biometryType)}...`
+                  : `Tap the ${biometryType === 'FaceID' ? 'Face ID' : 'biometric'} icon to authenticate`
+                }
+              </Text>
+            )}
           </View>
 
           {/* Button Section */}
           <View className="w-full gap-4">
+            {/* Face ID Quick Access Button - Show prominently if available and user has session */}
+            {biometricAvailable && hasExistingSession && (
+              <Button
+                title={`Continue with ${biometricService.getBiometryDisplayName(biometryType)}`}
+                onPress={handleFaceIDAuthentication}
+                variant="primary"
+                disabled={isAuthenticating}
+                style={{
+                  shadowColor: '#3B82F6',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 8,
+                  opacity: isAuthenticating ? 0.7 : 1,
+                }}
+              />
+            )}
+
             {/* Sign In Button */}
             <Button
               title={t('welcome.signIn')}
@@ -177,8 +353,8 @@ export default function WelcomeScreen() {
             {/* Create Account Button */}
             <Button
               title={t('welcome.createAccount')}
-              // onPress={() => navigation.navigate('WelcomeQuestionnaire')}
-              onPress={() => navigation.navigate('SignUp')}
+              // onPress={() => navigation.navigate('SignUp')}
+              onPress={() => navigation.navigate('WelcomeQuestionnaire')}
               variant="secondary"
               style={{
                 shadowColor: '#000',

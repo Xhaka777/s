@@ -16,3 +16,5 @@ export { default as VerifiedSuccess } from './VerifiedSuccessScreen';
 //
 export { default as WelcomeQuestionnaire } from './questionnaire/WelcomeQuestionnaire'
 export { default as SpoonedQuestionnaire } from './questionnaire/SpoonedQuestionnaire'
+export { default as CategoryQuestionsScreen } from './questionnaire/CategoryQuestionsScreen'
+export { default as OrderAnswersScreen } from './questionnaire/OrderAnswersScreen'
