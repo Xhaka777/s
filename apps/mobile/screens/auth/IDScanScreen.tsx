@@ -4,39 +4,28 @@ import {
     Text,
     Image,
     TouchableOpacity,
+    Dimensions,
     StatusBar,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
-    Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { AuthStackParamList } from "../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../components";
+import { useLanguage } from "../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ArrowLeft } from "lucide-react-native";
+import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { Button, ThirdUnion } from "../../components";
 
 const IDScanScreen = ({ navigation, route }) => {
+
+
     const handleBack = () => {
         navigation.goBack();
-    };
-
-    const handleContinue = () => {
-        // Since Veriff handles both ID and selfie verification,
-        // we can navigate to the next step or back to choose verification
-        Alert.alert(
-            'Verification Complete',
-            'Your documents have been submitted for verification. You will be notified of the results.',
-            [
-                {
-                    text: 'Continue',
-                    onPress: () => {
-                        // Navigate to next screen in your onboarding flow
-                        // This could be a waiting screen, dashboard, or next onboarding step
-                        navigation.navigate('DocumentationVerification');
-                    }
-                }
-            ]
-        );
-    };
+    }
 
     return (
         <View className="flex-1 bg-black">
@@ -60,11 +49,12 @@ const IDScanScreen = ({ navigation, route }) => {
                 <View
                     className="absolute"
                     style={{
-                        left: -20,
-                        top: 322,
-                        width: 524,
-                        height: 237,
-                        zIndex: 1,
+                        left: -20,           // X position from Figma
+                        top: 322,            // Y position from Figma  
+                        width: 524,          // Width from Figma
+                        height: 237,         // Height from Figma
+                        // transform: [{ rotate: '9.68deg' }], // Rotation from Figma
+                        zIndex: 1,           // Above blur but below content
                     }}
                 >
                     <ThirdUnion />
@@ -85,7 +75,6 @@ const IDScanScreen = ({ navigation, route }) => {
                             <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
                         </TouchableOpacity>
                     </View>
-                    
                     <View className="flex-1 justify-center items-center gap-6 mb-10">
                         <View className="w-full flex-col justify-start items-start gap-6">
                             <View className="w-full flex-col justify-center items-center gap-16">
@@ -93,38 +82,110 @@ const IDScanScreen = ({ navigation, route }) => {
                                 <View className="w-full flex-col justify-center items-center gap-6">
                                     {/* Title */}
                                     <Text className="text-white text-2xl font-PoppinsSemiBold leading-8 text-center">
-                                        Verification Submitted
+                                        Take a photo of your ID
                                     </Text>
 
                                     {/* Description */}
                                     <Text className="text-center text-gray-400 text-base font-PoppinsMedium leading-5">
-                                        Your identity verification has been submitted successfully.
+                                        Accepted Documents:
                                         <Text className="text-white font-PoppinsMedium">
-                                            {" "}We'll review your documents and notify you of the results.
+                                            {" "}ID Card, Passport, Residence Permit, Driver’s License
                                         </Text>
                                     </Text>
                                 </View>
 
-                                {/* Success Icon */}
-                                <View className="w-64 h-64 bg-green-200/20 rounded-full border border-green-600 flex-col justify-center items-center gap-2">
-                                    <View className="w-16 h-16 relative overflow-hidden justify-center items-center">
-                                        {/* You can replace this with a checkmark icon */}
-                                        <Text className="text-green-400 text-4xl">✓</Text>
+                                {/* ID Scanning Frame */}
+                                <View className="w-full flex-col justify-center items-center mt-8">
+                                    <View
+                                        className="relative"
+                                        style={{
+                                            width: 350,
+                                            height: 250,
+                                        }}
+                                    >
+                                        {/* Corner brackets */}
+                                        {/* Top Left */}
+                                        <View
+                                            className="absolute border-primary"
+                                            style={{
+                                                top: 0,
+                                                left: 0,
+                                                width: 80,
+                                                height: 80,
+                                                borderTopWidth: 1.5,
+                                                borderLeftWidth: 1.5,
+                                                borderTopLeftRadius: 20,
+                                            }}
+                                        />
+
+                                        {/* Top Right */}
+                                        <View
+                                            className="absolute border-primary"
+                                            style={{
+                                                top: 0,
+                                                right: 0,
+                                                width: 80,
+                                                height: 80,
+                                                borderTopWidth: 1.5,
+                                                borderRightWidth: 1.5,
+                                                borderTopRightRadius: 20,
+                                            }}
+                                        />
+
+                                        {/* Bottom Left */}
+                                        <View
+                                            className="absolute border-primary"
+                                            style={{
+                                                bottom: 0,
+                                                left: 0,
+                                                width: 80,
+                                                height: 80,
+                                                borderBottomWidth: 1.5,
+                                                borderLeftWidth: 1.5,
+                                                borderBottomLeftRadius: 20,
+                                            }}
+                                        />
+
+                                        {/* Bottom Right */}
+                                        <View
+                                            className="absolute border-primary"
+                                            style={{
+                                                bottom: 0,
+                                                right: 0,
+                                                width: 80,
+                                                height: 80,
+                                                borderBottomWidth: 1.5,
+                                                borderRightWidth: 1.5,
+                                                borderBottomRightRadius: 20,
+                                            }}
+                                        />
+
+                                        {/* Center content area (transparent) */}
+                                        <View
+                                            className="flex-1 justify-center items-center"
+                                            style={{
+                                                backgroundColor: 'rgba(0,0,0,0.1)',
+                                            }}
+                                        >
+
+                                        </View>
                                     </View>
                                 </View>
+
                             </View>
                         </View>
                     </View>
-                    
                     <Button
                         title='Accept & Continue'
-                        onPress={handleContinue}
+                        onPress={() => navigation.navigate('DocumentationVerification')} 
                         variant='primary'
+                    // disabled={!isAccepted}
                     />
+
                 </ScrollView>
             </SafeAreaView>
         </View>
-    );
-};
+    )
+}
 
 export default IDScanScreen;

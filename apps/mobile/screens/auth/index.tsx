@@ -18,3 +18,12 @@ export { default as WelcomeQuestionnaire } from './questionnaire/WelcomeQuestion
 export { default as SpoonedQuestionnaire } from './questionnaire/SpoonedQuestionnaire'
 export { default as CategoryQuestionsScreen } from './questionnaire/CategoryQuestionsScreen'
 export { default as OrderAnswersScreen } from './questionnaire/OrderAnswersScreen'
+
+//
+export { default as WelcomePsychological } from './psychological/WelcomePsychological';
+export { default as EarlyInfluences } from './psychological/EarlyInfluences';
+export { default as TrapsPreparation } from './psychological/TrapsPreparation';
+export { default as RelationshipExperience } from './psychological/RelationshipExperience';
+export { default as TrapAnswers } from './psychological/TrapAnswers';
+export { default as Conclusion } from './psychological/Conclusion';
+export { default as Booklet } from './psychological/Blooklet'; 

@@ -6,12 +6,13 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import TermsAndConditions from '../screens/auth/TermsAndConditions';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
-import { CategoryQuestionsScreen, CountrySetupScreen, DocumentVerification, IDScanScreen, OrderAnswersScreen, WelcomeQuestionnaire } from '../screens/auth';
+import { Booklet, CategoryQuestionsScreen, Conclusion, CountrySetupScreen, DocumentVerification, IDScanScreen, OrderAnswersScreen, RelationshipExperience, TrapAnswers, TrapsPreparation, WelcomePsychological, WelcomeQuestionnaire } from '../screens/auth';
 import VerifyIndentity from '../screens/auth/VerifyIdentityScreen';
 import ChooseVerify from '../screens/auth/ChooseVerifyScreen';
 import VerifiedSuccess from '../screens/auth/VerifiedSuccessScreen';
 import VerificationFailed from '../screens/auth/VerificationFailedScreen';
 import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionnaire';
+import EarlyInfluences from '../screens/auth/psychological/EarlyInfluences';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -32,6 +33,14 @@ export type AuthStackParamList = {
   SpoonedQuestionnaire: undefined;
   CategoryQuestions: undefined;
   OrderAnswers: undefined;
+  //
+  WelcomePsychological: undefined;
+  EarlyInfluences: undefined;
+  TrapsPreparation: undefined;
+  RelationshipExperience: undefined;
+  TrapAnswers: undefined;
+  Conclusion: undefined;
+  Booklet: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -62,6 +71,14 @@ export default function AuthNavigator() {
       <Stack.Screen name="SpoonedQuestionnaire" component={SpoonedQuestionnaire} />
       <Stack.Screen name="CategoryQuestions" component={CategoryQuestionsScreen} />
       <Stack.Screen name='OrderAnswers' component={OrderAnswersScreen} />
+
+      <Stack.Screen name='WelcomePsychological' component={WelcomePsychological} />
+      <Stack.Screen name='EarlyInfluences' component={EarlyInfluences} />
+      <Stack.Screen name='TrapsPreparation' component={TrapsPreparation} />
+      <Stack.Screen name="RelationshipExperience" component={RelationshipExperience} />
+      <Stack.Screen name="TrapAnswers" component={TrapAnswers} />
+      <Stack.Screen name="Conclusion" component={Conclusion} />
+      <Stack.Screen name="Booklet" component={Booklet} />
     </Stack.Navigator>
   );
 }

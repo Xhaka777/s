@@ -28,13 +28,17 @@ const VerificationFailed = ({ navigation, route }) => {
         navigation.goBack();
     }
 
-    
+
 
     const handleTryAgain = () => {
         setIsLoading(true);
         // Add your retry logic here
         // For example, after API call completes:
         // setIsLoading(false);
+        setTimeout(() => {
+            setIsLoading(false);
+            navigation.navigate('WelcomeQuestionnaire');
+        }, 3000);
     };
 
 

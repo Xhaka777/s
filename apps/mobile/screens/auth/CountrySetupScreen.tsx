@@ -107,21 +107,33 @@ const CountrySetupScreen = ({ navigation, route }) => {
     });
 
 
+    // const handleNext = async () => {
+    //     if (selectedCity && selectedCountry) {
+    //         const completeUserData = {
+    //             first_name: profileData.firstName,
+    //             last_name: profileData.lastName,
+    //             dob: formatDateToYYYYMMDD(profileData.birthday),
+    //             gender: mapGenderForAPI(profileData.selectedGender),
+    //             city: selectedCity.name,
+    //             country: selectedCountry.name
+    //         };
+    //         try {
+    //             await completeStageTwo.mutateAsync(completeUserData);
+    //         } catch (error) {
+    //             console.error('API call failed:', error);
+    //         }
+    //     }
+    // };
+
     const handleNext = async () => {
         if (selectedCity && selectedCountry) {
-            const completeUserData = {
-                first_name: profileData.firstName,
-                last_name: profileData.lastName,
-                dob: formatDateToYYYYMMDD(profileData.birthday),
-                gender: mapGenderForAPI(profileData.selectedGender),
+            // Demo: Just navigate to next screen without API call
+            console.log('Demo: Navigating to next screen with:', {
                 city: selectedCity.name,
                 country: selectedCountry.name
-            };
-            try {
-                await completeStageTwo.mutateAsync(completeUserData);
-            } catch (error) {
-                console.error('API call failed:', error);
-            }
+            });
+            
+            navigation.navigate('VerifyIdentity'); // or whatever your next screen is
         }
     };
 

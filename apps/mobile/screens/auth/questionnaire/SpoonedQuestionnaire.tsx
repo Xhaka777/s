@@ -20,7 +20,7 @@ import QuestionnaireCategory from "../../../components/QuestionnaireCategory"; /
 
 const SpoonedQuestionnaire = ({ navigation, route }) => {
     const [selectedCategories, setSelectedCategories] = useState([]);
-    
+
     // Track category progress (0-100) and completion status
     const [categoryProgress, setCategoryProgress] = useState({
         "Partnership and relationship": 0,
@@ -33,7 +33,7 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
         "No-gos in a relationship": 0,
         "Future": 0
     });
-    
+
     const [completedCategories, setCompletedCategories] = useState([]);
 
     const categories = [
@@ -48,11 +48,10 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
         "Future"
     ];
 
-    // Check if returning from completed category
     useEffect(() => {
         if (route?.params?.completedCategory) {
             const completedCategory = route.params.completedCategory;
-            
+
             // Mark category as completed
             setCompletedCategories(prev => {
                 if (!prev.includes(completedCategory)) {
@@ -60,7 +59,7 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
                 }
                 return prev;
             });
-            
+
             // Set progress to 100% for completed category
             setCategoryProgress(prev => ({
                 ...prev,
@@ -69,6 +68,12 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
 
             // Clear the route params to prevent re-triggering
             navigation.setParams({ completedCategory: null });
+
+            // Wait 3 seconds then navigate to different screen
+            setTimeout(() => {
+                console.log('Navigating after category completion...');
+                navigation.navigate('WelcomePsychological'); // Replace 'NextScreen' with your actual target screen
+            }, 3000);
         }
     }, [route?.params?.completedCategory]);
 
@@ -81,10 +86,10 @@ const SpoonedQuestionnaire = ({ navigation, route }) => {
                 return [...prev, category];
             }
         });
-        
+
         console.log('Selected category:', category);
         // Navigate to category questions and pass the category name
-        navigation.navigate('CategoryQuestions', { 
+        navigation.navigate('CategoryQuestions', {
             category: category,
             returnRoute: 'SpoonedQuestionnaire' // So we know where to return
         });
