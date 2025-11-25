@@ -41,7 +41,7 @@ const ChooseVerify = ({ navigation, route }) => {
     //                     [
     //                         {
     //                             text: 'Continue',
-    //                             onPress: () => navigation.navigate('NextScreen') // Navigate to your next screen
+    //                             onPress: () => navigation.navigate('VerifiedSuccess') 
     //                         }
     //                     ]
     //                 );
@@ -94,6 +94,7 @@ const ChooseVerify = ({ navigation, route }) => {
     //         if (result.status === 'DONE') {
     //             // Verification completed - poll for final status
     //             console.log('Verification completed, waiting for final result...');
+                //  navigation.navigate('VerifiedSuccess');
     //         } else if (result.status === 'CANCELED') {
     //             console.log('Verification was canceled by user');
     //             Alert.alert(

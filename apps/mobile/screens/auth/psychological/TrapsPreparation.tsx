@@ -364,6 +364,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                                     className="w-11 h-11 rounded-full justify-center items-center"
                                     style={{ backgroundColor: '#99225E' }}
                                     activeOpacity={0.8}
+                                    onPress={() => navigation.navigate('PsychologicalChat')}
                                 >
                                     <Image
                                         source={require('../../../assets/icons/message.png')}

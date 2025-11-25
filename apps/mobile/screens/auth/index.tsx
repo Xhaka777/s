@@ -27,3 +27,4 @@ export { default as RelationshipExperience } from './psychological/RelationshipE
 export { default as TrapAnswers } from './psychological/TrapAnswers';
 export { default as Conclusion } from './psychological/Conclusion';
 export { default as Booklet } from './psychological/Blooklet'; 
+export { default as PsychologicalChat } from './psychological/PsychologicalChat';

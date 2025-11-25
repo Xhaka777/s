@@ -17,6 +17,7 @@ import { Search, ArrowLeft } from 'lucide-react-native';
 import { cities, countries, searchCities, searchCountries, getCountryByCity } from '../../location-data';
 import Input from '../../components/Input';
 import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
+import { tokenStorage } from '../../api/services/tokenStorage';
 
 const CountrySetupScreen = ({ navigation, route }) => {
 
@@ -107,35 +108,37 @@ const CountrySetupScreen = ({ navigation, route }) => {
     });
 
 
-    // const handleNext = async () => {
-    //     if (selectedCity && selectedCountry) {
-    //         const completeUserData = {
-    //             first_name: profileData.firstName,
-    //             last_name: profileData.lastName,
-    //             dob: formatDateToYYYYMMDD(profileData.birthday),
-    //             gender: mapGenderForAPI(profileData.selectedGender),
-    //             city: selectedCity.name,
-    //             country: selectedCountry.name
-    //         };
-    //         try {
-    //             await completeStageTwo.mutateAsync(completeUserData);
-    //         } catch (error) {
-    //             console.error('API call failed:', error);
-    //         }
-    //     }
-    // };
-
     const handleNext = async () => {
+        const storedToken = await tokenStorage.getToken();
         if (selectedCity && selectedCountry) {
-            // Demo: Just navigate to next screen without API call
-            console.log('Demo: Navigating to next screen with:', {
+            const completeUserData = {
+                first_name: profileData.firstName,
+                last_name: profileData.lastName,
+                dob: formatDateToYYYYMMDD(profileData.birthday),
+                gender: mapGenderForAPI(profileData.selectedGender),
                 city: selectedCity.name,
-                country: selectedCountry.name
-            });
-            
-            navigation.navigate('VerifyIdentity'); // or whatever your next screen is
+                country: selectedCountry.name,
+                token: storedToken //
+            };
+            try {
+                await completeStageTwo.mutateAsync(completeUserData);
+            } catch (error) {
+                console.error('API call failed:', error);
+            }
         }
     };
+
+    // const handleNext = async () => {
+    //     if (selectedCity && selectedCountry) {
+    //         // Demo: Just navigate to next screen without API call
+    //         console.log('Demo: Navigating to next screen with:', {
+    //             city: selectedCity.name,
+    //             country: selectedCountry.name
+    //         });
+
+    //         navigation.navigate('VerifyIdentity'); // or whatever your next screen is
+    //     }
+    // };
 
     const formatDateToYYYYMMDD = (ddmmyyyy: string) => {
         if (!ddmmyyyy) return '';
