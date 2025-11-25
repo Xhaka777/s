@@ -6,11 +6,11 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import TermsAndConditions from '../screens/auth/TermsAndConditions';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
-import { Booklet, CategoryQuestionsScreen, Conclusion, CountrySetupScreen, DocumentVerification, IDScanScreen, OrderAnswersScreen, PsychologicalChat, RelationshipExperience, TrapAnswers, TrapsPreparation, WelcomePsychological, WelcomeQuestionnaire } from '../screens/auth';
-import VerifyIndentity from '../screens/auth/VerifyIdentityScreen';
-import ChooseVerify from '../screens/auth/ChooseVerifyScreen';
-import VerifiedSuccess from '../screens/auth/VerifiedSuccessScreen';
-import VerificationFailed from '../screens/auth/VerificationFailedScreen';
+import { Booklet, CategoryQuestionsScreen, Conclusion, CountrySetupScreen, DocumentVerification, EmailVerification, IDScanScreen, OrderAnswersScreen, PsychologicalChat, RelationshipExperience, TrapAnswers, TrapsPreparation, UploadPhoto, WelcomePsychological, WelcomeQuestionnaire } from '../screens/auth';
+import VerifyIndentity from '../screens/auth/veriff/VerifyIdentityScreen';
+import ChooseVerify from '../screens/auth/veriff/ChooseVerifyScreen';
+import VerifiedSuccess from '../screens/auth/veriff/VerifiedSuccessScreen';
+import VerificationFailed from '../screens/auth/veriff/VerificationFailedScreen';
 import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionnaire';
 import EarlyInfluences from '../screens/auth/psychological/EarlyInfluences';
 
@@ -43,6 +43,9 @@ export type AuthStackParamList = {
   Conclusion: undefined;
   Booklet: undefined;
   PsychologicalChat: undefined;
+  //
+  EmailVerification: undefined;
+  UploadPhoto: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -83,6 +86,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="Conclusion" component={Conclusion} />
       <Stack.Screen name="Booklet" component={Booklet} />
       <Stack.Screen name="PsychologicalChat" component={PsychologicalChat} />
+      <Stack.Screen name="EmailVerification" component={EmailVerification} />
+      <Stack.Screen name="UploadPhoto" component={UploadPhoto} />
     </Stack.Navigator>
   );
 }

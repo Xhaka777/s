@@ -13,9 +13,9 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";

@@ -13,26 +13,34 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, RadialGradientContent, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation"; 
+import { Button, RadialGradientContent, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
-const DocumentVerification = ({ navigation, route }) => {
+const VerificationFailed = ({ navigation, route }) => {
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            navigation.navigate('VerifiedSuccess'); // Make sure this matches your route name
-        }, 5000);
-
-        return () => clearTimeout(timer);
-    }, [navigation]);
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleBack = () => {
         navigation.goBack();
     }
+
+
+
+    const handleTryAgain = () => {
+        setIsLoading(true);
+        // Add your retry logic here
+        // For example, after API call completes:
+        // setIsLoading(false);
+        setTimeout(() => {
+            setIsLoading(false);
+            navigation.navigate('WelcomeQuestionnaire');
+        }, 3000);
+    };
+
 
     return (
         <View className="flex-1 bg-black">
@@ -89,7 +97,7 @@ const DocumentVerification = ({ navigation, route }) => {
                         <View className="w-full flex-col justify-center items-center gap-8">
                             {/* RadialGradientContent */}
                             <RadialGradientContent
-                                imageSource={require('../../assets/icons/facial-recognition.png')}
+                                imageSource={require('../../../assets/icons/Frame.png')}
                                 imageStyle={{ width: 40, height: 40 }}
                             />
 
@@ -97,20 +105,27 @@ const DocumentVerification = ({ navigation, route }) => {
                             <View className="w-full flex-col justify-center items-center gap-6">
                                 {/* Title */}
                                 <Text className="text-white text-2xl font-PoppinsSemiBold leading-8 text-center">
-                                    Verifying your identity
+                                    Please use another Identity document
                                 </Text>
 
                                 {/* Description */}
                                 <Text className="text-center text-white text-base font-PoppinsMedium leading-5">
-                                    Please be patient, we are verifying your documents
+                                    Sorry, the identity document you used cannot be verified. Please try again with a different identity document.
                                 </Text>
                             </View>
                         </View>
                     </View>
                 </ScrollView>
+                <Button
+                    title='Try again'
+                    onPress={handleTryAgain}
+                    variant='primary'
+                    loading={isLoading}
+                    disabled={isLoading}
+                />
             </SafeAreaView>
         </View>
     )
 }
 
-export default DocumentVerification;
+export default VerificationFailed;

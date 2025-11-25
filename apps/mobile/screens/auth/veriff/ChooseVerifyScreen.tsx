@@ -14,13 +14,13 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { useVeriffStatus } from "../../api/hooks/useOnboarding";
+import { useVeriffStatus } from "../../../api/hooks/useOnboarding";
 import { Veriff } from '@veriff/react-native-sdk';
 
 const ChooseVerify = ({ navigation, route }) => {
@@ -260,7 +260,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image
-                                                source={require('../../assets/icons/pic_id.png')}
+                                                source={require('../../../assets/icons/pic_id.png')}
                                                 className="w-[32px] h-[32px]"
                                                 resizeMode="contain"
                                             />
@@ -286,7 +286,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image
-                                                source={require('../../assets/icons/face_recognition.png')}
+                                                source={require('../../../assets/icons/face_recognition.png')}
                                                 className="w-[32px] h-[32px]"
                                                 resizeMode="contain"
                                             />
@@ -323,7 +323,7 @@ const ChooseVerify = ({ navigation, route }) => {
                     <View className="flex-row justify-start items-start gap-2">
                         <View className="w-6 h-6 relative overflow-hidden justify-center items-center">
                             <Image
-                                source={require('../../assets/icons/shield.png')}
+                                source={require('../../../assets/icons/shield.png')}
                                 className="w-[20px] h-[20px]"
                                 resizeMode="contain"
                             />
