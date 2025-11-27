@@ -6,12 +6,13 @@ import SignUpScreen from '../screens/auth/SignUpScreen';
 import ForgotPasswordScreen from '../screens/auth/ForgotPasswordScreen';
 import TermsAndConditions from '../screens/auth/TermsAndConditions';
 import ProfileSetupScreen from '../screens/auth/ProfileSetupScreen';
-import { CategoryQuestionsScreen, CountrySetupScreen, DocumentVerification, IDScanScreen, OrderAnswersScreen, WelcomeQuestionnaire } from '../screens/auth';
-import VerifyIndentity from '../screens/auth/VerifyIdentityScreen';
-import ChooseVerify from '../screens/auth/ChooseVerifyScreen';
-import VerifiedSuccess from '../screens/auth/VerifiedSuccessScreen';
-import VerificationFailed from '../screens/auth/VerificationFailedScreen';
+import { Booklet, CategoryQuestionsScreen, Conclusion, CountrySetupScreen, DocumentVerification, EmailVerification, IDScanScreen, OrderAnswersScreen, PsychologicalChat, RelationshipExperience, TrapAnswers, TrapsPreparation, UploadPhoto, WelcomePsychological, WelcomeQuestionnaire } from '../screens/auth';
+import VerifyIndentity from '../screens/auth/veriff/VerifyIdentityScreen';
+import ChooseVerify from '../screens/auth/veriff/ChooseVerifyScreen';
+import VerifiedSuccess from '../screens/auth/veriff/VerifiedSuccessScreen';
+import VerificationFailed from '../screens/auth/veriff/VerificationFailedScreen';
 import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionnaire';
+import EarlyInfluences from '../screens/auth/psychological/EarlyInfluences';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -21,6 +22,7 @@ export type AuthStackParamList = {
   TermsAndConditions: undefined;
   ProfileSetup: undefined;
   CountrySetup: undefined;
+  //
   VerifyIdentity: undefined;
   ChooseVerify: undefined;
   IDScan: undefined;
@@ -32,6 +34,18 @@ export type AuthStackParamList = {
   SpoonedQuestionnaire: undefined;
   CategoryQuestions: undefined;
   OrderAnswers: undefined;
+  //
+  WelcomePsychological: undefined;
+  EarlyInfluences: undefined;
+  TrapsPreparation: undefined;
+  RelationshipExperience: undefined;
+  TrapAnswers: undefined;
+  Conclusion: undefined;
+  Booklet: undefined;
+  PsychologicalChat: undefined;
+  //
+  EmailVerification: undefined;
+  UploadPhoto: undefined;
 };
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
@@ -52,6 +66,7 @@ export default function AuthNavigator() {
       <Stack.Screen name="TermsAndConditions" component={TermsAndConditions} />
       <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
       <Stack.Screen name="CountrySetup" component={CountrySetupScreen} />
+
       <Stack.Screen name="VerifyIdentity" component={VerifyIndentity} />
       <Stack.Screen name="ChooseVerify" component={ChooseVerify} />
       <Stack.Screen name="IDScan" component={IDScanScreen} />
@@ -62,6 +77,17 @@ export default function AuthNavigator() {
       <Stack.Screen name="SpoonedQuestionnaire" component={SpoonedQuestionnaire} />
       <Stack.Screen name="CategoryQuestions" component={CategoryQuestionsScreen} />
       <Stack.Screen name='OrderAnswers' component={OrderAnswersScreen} />
+
+      <Stack.Screen name='WelcomePsychological' component={WelcomePsychological} />
+      <Stack.Screen name='EarlyInfluences' component={EarlyInfluences} />
+      <Stack.Screen name='TrapsPreparation' component={TrapsPreparation} />
+      <Stack.Screen name="RelationshipExperience" component={RelationshipExperience} />
+      <Stack.Screen name="TrapAnswers" component={TrapAnswers} />
+      <Stack.Screen name="Conclusion" component={Conclusion} />
+      <Stack.Screen name="Booklet" component={Booklet} />
+      <Stack.Screen name="PsychologicalChat" component={PsychologicalChat} />
+      <Stack.Screen name="EmailVerification" component={EmailVerification} />
+      <Stack.Screen name="UploadPhoto" component={UploadPhoto} />
     </Stack.Navigator>
   );
 }

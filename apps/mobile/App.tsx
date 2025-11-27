@@ -11,6 +11,9 @@ import './global.css';
 import { LanguageProvider } from './contexts/LanguageContext';
 import './i18n';
 
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+
+
 function App() {
   const isDarkMode = useColorScheme() === 'dark';
   const [isLoading, setIsLoading] = useState(true);

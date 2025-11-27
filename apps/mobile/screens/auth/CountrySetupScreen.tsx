@@ -17,6 +17,7 @@ import { Search, ArrowLeft } from 'lucide-react-native';
 import { cities, countries, searchCities, searchCountries, getCountryByCity } from '../../location-data';
 import Input from '../../components/Input';
 import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
+import { tokenStorage } from '../../api/services/tokenStorage';
 
 const CountrySetupScreen = ({ navigation, route }) => {
 
@@ -108,6 +109,7 @@ const CountrySetupScreen = ({ navigation, route }) => {
 
 
     const handleNext = async () => {
+        const storedToken = await tokenStorage.getToken();
         if (selectedCity && selectedCountry) {
             const completeUserData = {
                 first_name: profileData.firstName,
@@ -115,7 +117,8 @@ const CountrySetupScreen = ({ navigation, route }) => {
                 dob: formatDateToYYYYMMDD(profileData.birthday),
                 gender: mapGenderForAPI(profileData.selectedGender),
                 city: selectedCity.name,
-                country: selectedCountry.name
+                country: selectedCountry.name,
+                token: storedToken //
             };
             try {
                 await completeStageTwo.mutateAsync(completeUserData);
@@ -124,6 +127,18 @@ const CountrySetupScreen = ({ navigation, route }) => {
             }
         }
     };
+
+    // const handleNext = async () => {
+    //     if (selectedCity && selectedCountry) {
+    //         // Demo: Just navigate to next screen without API call
+    //         console.log('Demo: Navigating to next screen with:', {
+    //             city: selectedCity.name,
+    //             country: selectedCountry.name
+    //         });
+
+    //         navigation.navigate('VerifyIdentity'); // or whatever your next screen is
+    //     }
+    // };
 
     const formatDateToYYYYMMDD = (ddmmyyyy: string) => {
         if (!ddmmyyyy) return '';
@@ -224,12 +239,14 @@ const CountrySetupScreen = ({ navigation, route }) => {
 
                 {/* Content Layer - Normal flow on top */}
                 <SafeAreaView className="flex-1 relative z-10">
-                    <ScrollView
+                    {/* <ScrollView
                         className="flex-1 px-5"
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         onScrollBeginDrag={closeDropdowns}
-                    >
+                    > */}
+                    <View className="flex-1 px-5">
+
                         {/* Header */}
                         <View className="flex-row items-center justify-between pt-5 pb-2.5">
                             <TouchableOpacity
@@ -334,13 +351,15 @@ const CountrySetupScreen = ({ navigation, route }) => {
                             {/* Add extra space to prevent button overlap with dropdown */}
                             <View className="h-12" />
                         </View>
-                    </ScrollView>
+                        </View>
+                    {/* </ScrollView> */}
 
                     <Button
                         title={isFormValid ? 'Continue to Verification' : 'Next'}
                         onPress={handleNext}
                         variant='primary'
                         disabled={!isFormValid}
+                        style={{ paddingHorizontal: 20, marginHorizontal: 20 }}
                     />
                 </SafeAreaView>
             </KeyboardAvoidingView>

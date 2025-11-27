@@ -4,207 +4,223 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   ScrollView,
-  Dimensions,
 } from 'react-native';
 
-const DatePickerCalendar = ({ 
-  isVisible, 
-  selectedDate, 
-  onDateSelect, 
-  onCancel, 
-  onSave 
-}) => {
-  const [selectedMonth, setSelectedMonth] = useState(selectedDate?.month || 'Dec');
-  const [selectedDay, setSelectedDay] = useState(selectedDate?.day || '09');
-  const [selectedYear, setSelectedYear] = useState(selectedDate?.year || '2015');
+const ITEM_HEIGHT = 50;
+const VISIBLE_ITEMS = 5;
 
-  // Full arrays for scrolling
+const DatePickerCalendar = ({
+  isVisible,
+  selectedDate,
+  onDateSelect,
+  onCancel,
+  onSave
+}) => {
   const months = [
     'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
     'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
   ];
-  
-  const days = Array.from({ length: 31 }, (_, i) => 
-    String(i + 1).padStart(2, '0')
-  );
-  
-  const years = Array.from({ length: 100 }, (_, i) => 
-    String(2024 - i)
-  );
 
-  // Scroll refs
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: currentYear - 1949 }, (_, i) => currentYear - i);
+  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, '0'));
+
+  // Get initial values with fallbacks
+  const getInitialMonthIndex = () => {
+    if (selectedDate?.month) {
+      const index = months.indexOf(selectedDate.month);
+      return index >= 0 ? index : 11;
+    }
+    return 11; // December
+  };
+
+  const getInitialDay = () => {
+    if (selectedDate?.day) {
+      const parsed = parseInt(selectedDate.day);
+      return !isNaN(parsed) ? parsed : 9;
+    }
+    return 9;
+  };
+
+  const getInitialYear = () => {
+    if (selectedDate?.year) {
+      const parsed = parseInt(selectedDate.year);
+      return !isNaN(parsed) ? parsed : 2000;
+    }
+    return 2000;
+  };
+
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState(getInitialMonthIndex());
+  const [selectedDay, setSelectedDay] = useState(getInitialDay());
+  const [selectedYear, setSelectedYear] = useState(getInitialYear());
+
   const monthScrollRef = useRef(null);
   const dayScrollRef = useRef(null);
   const yearScrollRef = useRef(null);
 
-  const ITEM_HEIGHT = 40;
+  // Get days in month
+  const getDaysInMonth = (monthIndex, year) => {
+    return new Date(year, monthIndex + 1, 0).getDate();
+  };
 
-  // Scroll to selected item when component mounts or when visibility changes
+  // Update parent when selection changes
+  useEffect(() => {
+    if (onDateSelect && isVisible) {
+      onDateSelect({
+        month: months[selectedMonthIndex],
+        day: String(selectedDay).padStart(2, '0'),
+        year: String(selectedYear),
+      });
+    }
+  }, [selectedMonthIndex, selectedDay, selectedYear, isVisible]);
+
+  // Initialize scroll positions
   useEffect(() => {
     if (isVisible) {
       setTimeout(() => {
-        scrollToSelected();
-      }, 100);
+        const monthY = selectedMonthIndex * ITEM_HEIGHT;
+        const dayY = (selectedDay - 1) * ITEM_HEIGHT;
+        const yearIndex = years.indexOf(selectedYear);
+        const yearY = yearIndex !== -1 ? yearIndex * ITEM_HEIGHT : 0;
+
+        monthScrollRef.current?.scrollTo({ y: monthY, animated: false });
+        dayScrollRef.current?.scrollTo({ y: dayY, animated: false });
+        yearScrollRef.current?.scrollTo({ y: yearY, animated: false });
+      }, 150);
     }
   }, [isVisible]);
 
-  const scrollToSelected = () => {
-    const monthIndex = months.indexOf(selectedMonth);
-    const dayIndex = days.indexOf(selectedDay);
-    const yearIndex = years.indexOf(selectedYear);
+  const handleScroll = (event, type) => {
+    const offsetY = event.nativeEvent.contentOffset.y;
+    const index = Math.round(offsetY / ITEM_HEIGHT);
 
-    if (monthScrollRef.current && monthIndex >= 0) {
-      monthScrollRef.current.scrollTo({
-        y: (monthIndex + 2) * ITEM_HEIGHT, // Add 2 for padding items
-        animated: true
-      });
-    }
+    if (type === 'month') {
+      const newMonth = Math.max(0, Math.min(11, index));
+      setSelectedMonthIndex(newMonth);
 
-    if (dayScrollRef.current && dayIndex >= 0) {
-      dayScrollRef.current.scrollTo({
-        y: (dayIndex + 2) * ITEM_HEIGHT, // Add 2 for padding items
-        animated: true
-      });
-    }
+      const daysInMonth = getDaysInMonth(newMonth, selectedYear);
+      if (selectedDay > daysInMonth) {
+        setSelectedDay(daysInMonth);
+        dayScrollRef.current?.scrollTo({
+          y: (daysInMonth - 1) * ITEM_HEIGHT,
+          animated: true,
+        });
+      }
+    } else if (type === 'day') {
+      const daysInMonth = getDaysInMonth(selectedMonthIndex, selectedYear);
+      const newDay = Math.max(1, Math.min(daysInMonth, index + 1));
+      setSelectedDay(newDay);
+    } else if (type === 'year') {
+      if (index >= 0 && index < years.length) {
+        const newYear = years[index];
+        setSelectedYear(newYear);
 
-    if (yearScrollRef.current && yearIndex >= 0) {
-      yearScrollRef.current.scrollTo({
-        y: (yearIndex + 2) * ITEM_HEIGHT, // Add 2 for padding items
-        animated: true
-      });
-    }
-  };
-
-  const handleMonthScroll = (event) => {
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round((y + ITEM_HEIGHT) / ITEM_HEIGHT) - 2; // Adjust for padding
-    if (index >= 0 && index < months.length) {
-      setSelectedMonth(months[index]);
-    }
-  };
-
-  const handleDayScroll = (event) => {
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round((y + ITEM_HEIGHT) / ITEM_HEIGHT) - 2; // Adjust for padding
-    if (index >= 0 && index < days.length) {
-      setSelectedDay(days[index]);
+        const daysInMonth = getDaysInMonth(selectedMonthIndex, newYear);
+        if (selectedDay > daysInMonth) {
+          setSelectedDay(daysInMonth);
+          dayScrollRef.current?.scrollTo({
+            y: (daysInMonth - 1) * ITEM_HEIGHT,
+            animated: true,
+          });
+        }
+      }
     }
   };
 
-  const handleYearScroll = (event) => {
-    const y = event.nativeEvent.contentOffset.y;
-    const index = Math.round((y + ITEM_HEIGHT) / ITEM_HEIGHT) - 2; // Adjust for padding
-    if (index >= 0 && index < years.length) {
-      setSelectedYear(years[index]);
+  const renderColumn = (data, selectedValue, scrollRef, type) => {
+    let displayData = data;
+    
+    // Limit days based on current month
+    if (type === 'day') {
+      const daysInMonth = getDaysInMonth(selectedMonthIndex, selectedYear);
+      displayData = data.slice(0, daysInMonth);
     }
-  };
 
-  const renderPickerColumn = (data, selectedValue, onScroll, scrollRef) => {
     return (
-      <View style={styles.columnContainer}>
-        {/* Selection indicator overlay */}
-        <View style={styles.selectionIndicator} />
-        
+      <View style={styles.column}>
         <ScrollView
           ref={scrollRef}
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
-          onMomentumScrollEnd={onScroll}
-          onScrollEndDrag={onScroll}
           snapToInterval={ITEM_HEIGHT}
           snapToAlignment="center"
           decelerationRate="fast"
-          bounces={false}
+          onMomentumScrollEnd={(e) => handleScroll(e, type)}
+          contentContainerStyle={styles.scrollContent}
           scrollEventThrottle={16}
         >
-          {/* Add padding items at top */}
-          <View style={[styles.pickerItem, { height: ITEM_HEIGHT }]} />
-          <View style={[styles.pickerItem, { height: ITEM_HEIGHT }]} />
-          
-          {data.map((item, index) => {
-            const isSelected = item === selectedValue;
+          {displayData.map((item, index) => {
+            let isSelected = false;
+            let distance = 0;
+
+            if (type === 'month') {
+              isSelected = index === selectedValue;
+              distance = Math.abs(index - selectedValue);
+            } else if (type === 'day') {
+              isSelected = index + 1 === selectedValue;
+              distance = Math.abs(index + 1 - selectedValue);
+            } else if (type === 'year') {
+              isSelected = item === selectedValue;
+              const yearIndex = years.indexOf(selectedValue);
+              distance = Math.abs(index - yearIndex);
+            }
+
+            const opacity = Math.max(0.3, 1 - (distance * 0.25));
+
             return (
-              <TouchableOpacity
-                key={`${item}-${index}`}
-                style={[styles.pickerItem, { height: ITEM_HEIGHT }]}
-                onPress={() => {
-                  // Scroll to this item when pressed
-                  if (scrollRef.current) {
-                    scrollRef.current.scrollTo({
-                      y: (index + 2) * ITEM_HEIGHT,
-                      animated: true
-                    });
-                  }
-                }}
-                activeOpacity={0.7}
-              >
+              <View key={`${type}-${index}`} style={styles.item}>
                 <Text
                   style={[
-                    styles.pickerText,
-                    isSelected && styles.selectedPickerText
+                    styles.itemText,
+                    isSelected && styles.selectedItemText,
+                    { opacity },
                   ]}
                 >
                   {item}
                 </Text>
-              </TouchableOpacity>
+              </View>
             );
           })}
-          
-          {/* Add padding items at bottom */}
-          <View style={[styles.pickerItem, { height: ITEM_HEIGHT }]} />
-          <View style={[styles.pickerItem, { height: ITEM_HEIGHT }]} />
         </ScrollView>
       </View>
     );
   };
 
-  const handleSave = () => {
-    onDateSelect({
-      month: selectedMonth,
-      day: selectedDay,
-      year: selectedYear
-    });
-    onSave();
-  };
-
-  if (!isVisible) return null;
+  if (!isVisible) {
+    return null;
+  }
 
   return (
-    <View 
-      style={styles.container}
-      onStartShouldSetResponder={() => true}
-      onMoveShouldSetResponder={() => true}
-      onResponderTerminationRequest={() => false}
-      onResponderGrant={() => {}}
-      onResponderMove={() => {}}
-      onResponderRelease={() => {}}
-    >
+    <View style={styles.container}>
+      {/* Picker columns */}
       <View style={styles.pickerContainer}>
-        {/* Month Column */}
-        {renderPickerColumn(months, selectedMonth, handleMonthScroll, monthScrollRef)}
-        
-        {/* Day Column */}
-        {renderPickerColumn(days, selectedDay, handleDayScroll, dayScrollRef)}
-        
-        {/* Year Column */}
-        {renderPickerColumn(years, selectedYear, handleYearScroll, yearScrollRef)}
+        {renderColumn(months, selectedMonthIndex, monthScrollRef, 'month')}
+        {renderColumn(days, selectedDay, dayScrollRef, 'day')}
+        {renderColumn(years, selectedYear, yearScrollRef, 'year')}
       </View>
 
-      {/* Separator Line */}
-      <View style={styles.separator} />
+      {/* Selection indicator overlay */}
+      <View style={styles.selectionIndicator} pointerEvents="none" />
 
-      {/* Action Buttons */}
+      {/* Gradient fades */}
+      <View style={[styles.gradientOverlay, styles.topGradient]} pointerEvents="none" />
+      <View style={[styles.gradientOverlay, styles.bottomGradient]} pointerEvents="none" />
+
+      {/* Action buttons */}
       <View style={styles.actionContainer}>
-        <TouchableOpacity style={styles.cancelButton} onPress={onCancel}>
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={onCancel}
+          activeOpacity={0.7}
+        >
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        
-        <View style={styles.verticalSeparator} />
-        
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+        <View style={styles.divider} />
+        <TouchableOpacity 
+          style={styles.actionButton} 
+          onPress={onSave}
+          activeOpacity={0.7}
+        >
           <Text style={styles.saveText}>Save</Text>
         </TouchableOpacity>
       </View>
@@ -214,97 +230,91 @@ const DatePickerCalendar = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#1A1A1A', // Dark background to match your theme
-    borderRadius: 16,
-    marginTop: 8,
-    paddingTop: 16,
+    backgroundColor: '#1a1a1a',
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginTop: 10,
+    marginBottom: 20,
   },
   pickerContainer: {
-    height: 200,
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingBottom: 8,
+    height: ITEM_HEIGHT * VISIBLE_ITEMS,
+    backgroundColor: '#1a1a1a',
   },
-  columnContainer: {
-    flex: 1,
-    position: 'relative',
-    marginHorizontal: 4,
-  },
-  scrollView: {
+  column: {
     flex: 1,
   },
   scrollContent: {
-    paddingVertical: 0,
+    paddingVertical: ITEM_HEIGHT * 2,
   },
-  pickerItem: {
+  item: {
+    height: ITEM_HEIGHT,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 40,
   },
-  pickerText: {
-    fontFamily: 'Poppins',
-    fontSize: 16,
-    color: '#888888',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  selectedPickerText: {
-    color: '#FFFFFF',
+  itemText: {
     fontSize: 18,
+    color: '#666',
+    fontWeight: '400',
+    fontFamily: 'Poppins',
+  },
+  selectedItemText: {
+    color: '#fff',
+    fontSize: 20,
     fontWeight: '500',
   },
   selectionIndicator: {
     position: 'absolute',
-    top: '50%',
+    top: ITEM_HEIGHT * 2,
+    left: 10,
+    right: 10,
+    height: ITEM_HEIGHT,
+    // backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3a3a3a',
+  },
+  gradientOverlay: {
+    position: 'absolute',
     left: 0,
     right: 0,
-    height: 40,
-    marginTop: -20,
-    backgroundColor: 'rgba(136, 136, 136, 0.2)', // Light gray with transparency
-    borderRadius: 8,
-    zIndex: 1,
-    pointerEvents: 'none', // Important: allows touches to pass through
+    height: ITEM_HEIGHT * 2,
   },
-  separator: {
-    height: 0.5,
-    backgroundColor: '#888888',
-    marginHorizontal: 16,
+  topGradient: {
+    top: 0,
+    // backgroundColor: 'rgba(26, 26, 26, 0.95)',
+  },
+  bottomGradient: {
+    bottom: 60,
+    // backgroundColor: 'rgba(26, 26, 26, 0.95)',
   },
   actionContainer: {
-    height: 56,
     flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: '#888888',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+    height: 60,
+    backgroundColor: '#1a1a1a',
   },
-  verticalSeparator: {
-    width: 0.5,
-    backgroundColor: '#888888',
-  },
-  cancelButton: {
+  actionButton: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    height: 56,
   },
-  saveButton: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    height: 56,
+  divider: {
+    width: 1,
+    backgroundColor: '#333',
   },
   cancelText: {
-    fontFamily: 'Poppins',
+    color: '#999',
     fontSize: 20,
-    fontWeight: '500',
-    color: '#888888',
-    lineHeight: 24,
+    fontWeight: '400',
+    fontFamily: 'Poppins',
   },
   saveText: {
-    fontFamily: 'Poppins',
+    color: '#99225E',
     fontSize: 20,
-    fontWeight: '500',
-    color: '#FF6B9D', // Adjust this color to match your theme
-    lineHeight: 24,
+    fontWeight: '600',
+    fontFamily: 'Poppins',
   },
 });
 

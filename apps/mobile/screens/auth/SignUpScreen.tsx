@@ -18,7 +18,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { ArrowLeft, Shield, ChevronDown } from 'lucide-react-native';
 import Svg, { Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
-import auth, { FirebaseAuthTypes, getAuth, signInWithPhoneNumber } from '@react-native-firebase/auth';
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
 import Union from '../../components/svg/Union';
 import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -27,6 +27,9 @@ import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
 import { useCompleteStageOne } from '../../api/hooks/useOnboarding';
 import { tokenStorage } from '../../api/services/tokenStorage';
 import { LogBox } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
+
+
 
 LogBox.ignoreLogs([
   'This method is deprecated (as well as all React Native Firebase namespaced API)',
@@ -34,30 +37,17 @@ LogBox.ignoreLogs([
 ]);
 
 // Debug utilities
-const debugFirebaseSetup = () => {
-  console.log('🔍 === FIREBASE SETUP DEBUG ===');
-  try {
-    const auth = getAuth();
-    console.log('🔐 Auth Instance:', !!auth);
-    console.log('👤 Current User:', auth.currentUser?.uid || 'None');
-    console.log('📞 Phone Auth Available:', !!auth);
-  } catch (error) {
-    console.error('❌ Firebase Setup Error:', error);
-  }
-  console.log('🔍 === END FIREBASE DEBUG ===');
-};
+// const debugFirebaseSetup = () => {
+//   try {
+//     const auth = getAuth();
+//   } catch (error) {
+//     //
+//   }
+// };
 
 const debugPhoneNumber = (countryCode: string, phoneNumber: string) => {
-  console.log('📱 === PHONE NUMBER DEBUG ===');
   const cleanPhone = phoneNumber.replace(/[\s\-\(\)]/g, '');
   const fullNumber = `${countryCode}${cleanPhone}`;
-  console.log('🏳️ Country Code:', countryCode);
-  console.log('📞 Raw Phone:', phoneNumber);
-  console.log('🧹 Cleaned Phone:', cleanPhone);
-  console.log('🌍 Full Number:', fullNumber);
-  console.log('📏 Total Length:', fullNumber.length);
-  console.log('✅ E.164 Valid:', /^\+[1-9]\d{1,14}$/.test(fullNumber));
-  console.log('📱 === END PHONE DEBUG ===');
   return fullNumber;
 };
 
@@ -116,7 +106,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
     if (cleanNumber.startsWith(country.code)) {
       const remaining = cleanNumber.substring(country.code.length);
 
-      console.log(`🔍 Checking ${country.country} (${country.code}):`, {
+      console.log(`Checking ${country.country} (${country.code}):`, {
         input: cleanNumber,
         remaining: remaining,
         remainingLength: remaining.length,
@@ -128,7 +118,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
       if (remaining.length >= 6) { // At least 6 digits to attempt detection
         // Check if remaining number length makes sense for this country
         if (remaining.length >= country.minLength && remaining.length <= country.maxLength) {
-          console.log(`✅ ${country.country} detected successfully!`);
+          console.log(`${country.country} detected successfully!`);
           return {
             countryCode: country.code,
             remainingNumber: remaining,
@@ -139,7 +129,7 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
     }
   }
 
-  console.log('❌ No priority country detected');
+  console.log('No priority country detected');
   return { countryCode: '', remainingNumber: cleanNumber, detected: false };
 };
 
@@ -173,6 +163,7 @@ export default function SignUpScreen() {
       if (response.success && response.token) {
         // Save token securely
         await tokenStorage.saveToken(response.token);
+        console.log('reponse.token', response.token)
         // Alert.alert('Success!', response.message);
         setShowSuccessModal(true);
       } else {
@@ -187,71 +178,45 @@ export default function SignUpScreen() {
 
   // Debug Firebase setup on component mount
   useEffect(() => {
-    debugFirebaseSetup();
-    console.log('🚀 SignUpScreen mounted - Ready for real phone verification');
+    // debugFirebaseSetup();
+    console.log('SignUpScreen mounted - Ready for real phone verification');
   }, []);
 
+  messaging().requestPermission();
+
+  // Register background handler
+  messaging().setBackgroundMessageHandler(async remoteMessage => {
+    console.log('Message handled in the background!', remoteMessage);
+  });
+
+
   // Listen for authentication state changes
-  useEffect(() => {
-    const authInstance = getAuth();
-    const subscriber = authInstance.onAuthStateChanged(async (user) => {
-      if (user && step === 'verification' && !apiCallMade) {
-        console.log('🎉 === REAL USER AUTHENTICATION SUCCESS ===');
-        console.log('✅ User signed in successfully:', user.uid);
-        console.log('📱 Phone number:', user.phoneNumber);
-        console.log('📧 Email:', user.email);
-        console.log('🕐 Creation time:', user.metadata.creationTime);
-        console.log('🔄 Last sign in:', user.metadata.lastSignInTime);
+useEffect(() => {
+  const subscriber = auth().onAuthStateChanged(async (user) => {
+    if (user && step === 'verification' && !apiCallMade) {
+      try {
+        setApiCallMade(true);
+        const idToken = await user.getIdToken();
+        
+        // Your existing code...
+        const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
 
-        try {
+        await completeStageOne.mutateAsync({
+          email: email,
+          phone_e164: verifiedPhone,
+          preferred_language: 'en',
+          firebase_id_token: idToken,
+        });
 
-          setApiCallMade(true);
-          // Get the Firebase ID Token for backend authentication
-          const idToken = await user.getIdToken();
-          const idTokenResult = await user.getIdTokenResult();
-
-          console.log('🔐 === FIREBASE AUTH TOKEN INFO ===');
-          console.log('📝 ID Token (send this to backend):');
-          console.log(idToken); // Log token on separate line for clarity
-          console.log('📊 Token Claims:', JSON.stringify(idTokenResult.claims, null, 2));
-          console.log('⏰ Token Expiration Time:', idTokenResult.expirationTime);
-          console.log('⏰ Token Expiration Date:', new Date(idTokenResult.expirationTime));
-          console.log('🆔 User UID:', user.uid);
-          console.log('📞 Verified Phone:', user.phoneNumber);
-          console.log('📧 Email:', user.email || 'No email');
-          console.log('🔐 === END TOKEN INFO ===');
-
-          // This is what you'll send to your backend
-          const authData = {
-            idToken: idToken,
-            uid: user.uid,
-            phoneNumber: user.phoneNumber,
-            email: user.email,
-            displayName: user.displayName,
-            creationTime: user.metadata.creationTime,
-            lastSignInTime: user.metadata.lastSignInTime,
-          };
-
-          console.log('📤 Auth data to send to backend:', JSON.stringify(authData, null, 2));
-
-          // const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
-
-          // await completeStageOne.mutateAsync({
-          //   email: email,
-          //   phone_e164: verifiedPhone,
-          //   preferred_language: 'en',
-          //   firebase_id_token: idToken,
-          // });
-
-        } catch (error) {
-          console.error('❌ Error getting ID token:', error);
-        }
-      } else {
-        console.log('👤 No user signed in');
+      } catch (error) {
+        console.error('Error getting ID token:', error);
       }
-    });
-    return subscriber;
-  }, [email, phoneNumber, countryCode, completeStageOne, step, apiCallMade]);
+    } else {
+      console.log('No user signed in');
+    }
+  });
+  return subscriber;
+}, [email, phoneNumber, countryCode, completeStageOne, step, apiCallMade]);
 
   const formatPhoneNumber = (countryCode: string, phoneNumber: string) => {
     const cleanPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
@@ -296,8 +261,6 @@ export default function SignUpScreen() {
   };
 
   const handlePhoneNumberChange = (text: string) => {
-    console.log('📱 Phone input changed:', text);
-
     // Allow + character and digits, remove other characters
     const allowedChars = text.replace(/[^\d+]/g, '');
 
@@ -306,7 +269,6 @@ export default function SignUpScreen() {
       const { countryCode: detectedCode, remainingNumber, detected } = detectPriorityCountryCode(allowedChars);
 
       if (detected) {
-        console.log('🎯 Auto-setting country code and phone number');
         setCountryCode(detectedCode);
         setPhoneNumber(remainingNumber);
         return;
@@ -322,66 +284,74 @@ export default function SignUpScreen() {
     }
   };
 
-  const handleSendVerificationCode = async () => {
-    if (!validateForm()) {
-      return;
+const handleSendVerificationCode = async () => {
+  if (!validateForm()) {
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setError('');
+
+    const fullPhoneNumber = formatPhoneNumber(countryCode, phoneNumber);
+    
+    // ADD DETAILED DEBUGGING
+    console.log('=== PHONE VERIFICATION DEBUG ===');
+    console.log('Input country code:', countryCode);
+    console.log('Input phone number:', phoneNumber);
+    console.log('Formatted full number:', fullPhoneNumber);
+    console.log('Length check:', fullPhoneNumber.length);
+    console.log('Regex test:', /^\+[1-9]\d{1,14}$/.test(fullPhoneNumber));
+    console.log('================================');
+
+    // Use the updated Firebase API
+    const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
+    
+    console.log('Firebase confirmation object:', confirmation);
+    console.log('Verification ID:', confirmation.verificationId);
+
+    setConfirm(confirmation);
+    setStep('verification');
+    setOtpValues(['', '', '', '', '', '']);
+    setCurrentOtpIndex(0);
+
+  } catch (error: any) {
+    console.error('=== FIREBASE ERROR ===');
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Full error:', error);
+    console.error('====================');
+    
+    let errorMessage = 'Failed to send verification code. Please try again.';
+
+    switch (error.code) {
+      case 'auth/invalid-phone-number':
+        errorMessage = 'Invalid phone number format. Please check your number.';
+        break;
+      case 'auth/too-many-requests':
+        errorMessage = 'Too many requests. Please try again later.';
+        break;
+      case 'auth/quota-exceeded':
+        errorMessage = 'SMS quota exceeded. Please try again later.';
+        break;
+      case 'auth/missing-phone-number':
+        errorMessage = 'Phone number is required.';
+        break;
+      case 'auth/captcha-check-failed':
+        errorMessage = 'reCAPTCHA verification failed. Please try again.';
+        break;
+      case 'auth/invalid-app-credential':
+        errorMessage = 'Invalid app configuration. Please check Firebase setup.';
+        break;
+      default:
+        errorMessage = error.message || errorMessage;
     }
 
-    try {
-      setLoading(true);
-      setError('');
-
-      const fullPhoneNumber = formatPhoneNumber(countryCode, phoneNumber);
-      console.log('📞 === ATTEMPTING PHONE VERIFICATION ===');
-      console.log('🌍 Full phone number:', fullPhoneNumber);
-
-      // Debug the formatted phone number
-      debugPhoneNumber(countryCode, phoneNumber);
-
-      // Create confirmation result
-      const confirmation = await signInWithPhoneNumber(getAuth(), fullPhoneNumber);
-
-      console.log('✅ === SMS SENT SUCCESSFULLY ===');
-      console.log('📱 Confirmation result:', !!confirmation);
-      console.log('🔗 Verification ID:', confirmation.verificationId);
-
-      setConfirm(confirmation);
-      setStep('verification');
-      setOtpValues(['', '', '', '', '', '']); // Reset OTP values
-      setCurrentOtpIndex(0); // Reset current index
-
-    } catch (error: any) {
-      console.error('❌ === PHONE VERIFICATION ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-
-      let errorMessage = 'Failed to send verification code. Please try again.';
-
-      switch (error.code) {
-        case 'auth/invalid-phone-number':
-          errorMessage = 'Invalid phone number format. Please check your number.';
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = 'Too many requests. Please try again later.';
-          break;
-        case 'auth/quota-exceeded':
-          errorMessage = 'SMS quota exceeded. Please try again later.';
-          break;
-        case 'auth/user-disabled':
-          errorMessage = 'This phone number has been disabled.';
-          break;
-        default:
-          if (error.message) {
-            errorMessage = error.message;
-          }
-      }
-
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setError(errorMessage);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // OTP Input handlers
   const handleOtpChange = (value: string, index: number) => {
@@ -452,17 +422,9 @@ export default function SignUpScreen() {
       setLoading(true);
       setError('');
 
-      console.log('🔐 === VERIFYING CODE ===');
-      console.log('📟 Code to verify:', codeToVerify);
-      console.log('🔗 Confirmation object:', !!confirm);
-
       const credential = await confirm.confirm(codeToVerify);
 
       const user = credential?.user;
-      console.log('🎉 === VERIFICATION SUCCESS ===');
-      console.log('✅ User credential:', !!credential);
-      // console.log('👤 User:', credential.user?.uid);
-      // console.log('📱 Phone number verified:', credential.user?.phoneNumber);
 
       // The onAuthStateChanged listener will handle the rest
       const verifiedPhone = user?.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
@@ -478,11 +440,6 @@ export default function SignUpScreen() {
 
       setShowSuccessModal(true);
     } catch (error: any) {
-      console.error('❌ === CODE VERIFICATION ERROR ===');
-      console.error('Error details:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-
       let errorMessage = 'Invalid verification code. Please try again.';
 
       switch (error.code) {
@@ -507,10 +464,39 @@ export default function SignUpScreen() {
     }
   };
 
+  // const handleVerifyCode = async (code?: string) => {
+  //   const codeToVerify = code || verificationCode;
+
+  //   if (!codeToVerify || codeToVerify.length !== 6) {
+  //     setError('Please enter the complete 6-digit verification code');
+  //     return;
+  //   }
+
+  //   try {
+  //     setLoading(true);
+  //     setError('');
+
+  //     // Demo: Check if code is "222222"
+  //     if (codeToVerify === '222222') {
+  //       // Simulate API delay
+  //       setTimeout(() => {
+  //         setLoading(false);
+  //         setShowSuccessModal(true);
+  //       }, 1000);
+  //     } else {
+  //       setLoading(false);
+  //       setError('Invalid verification code. Use 222222 for demo.');
+  //     }
+
+  //   } catch (error) {
+  //     setLoading(false);
+  //     setError('Something went wrong. Please try again.');
+  //   }
+  // };
+
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
     navigation.navigate('ProfileSetup'); // Uncomment when ready to navigate
-    console.log('🚀 Ready to navigate to main app');
   };
 
   const handleResendCode = async () => {
@@ -657,6 +643,9 @@ export default function SignUpScreen() {
         </Text>
         <Text className="text-base text-gray-400 leading-5 font-Poppins">
           Enter the OTP below to verify it.
+        </Text>
+        <Text className="text-base text-gray-400 leading-5 font-Poppins mt-5">
+          Press: 2 2 2 2 2 2
         </Text>
       </View>
 

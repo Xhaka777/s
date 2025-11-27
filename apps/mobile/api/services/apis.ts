@@ -1,7 +1,7 @@
 export class ApiClient {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://192.168.1.18:3000') {
+  constructor(baseURL: string = 'http://192.168.0.23:3000') {
     this.baseURL = baseURL;
   }
 

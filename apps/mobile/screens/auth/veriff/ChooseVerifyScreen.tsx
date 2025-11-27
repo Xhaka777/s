@@ -14,13 +14,13 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { useVeriffStatus } from "../../api/hooks/useOnboarding";
+import { useVeriffStatus } from "../../../api/hooks/useOnboarding";
 import { Veriff } from '@veriff/react-native-sdk';
 
 const ChooseVerify = ({ navigation, route }) => {
@@ -28,38 +28,38 @@ const ChooseVerify = ({ navigation, route }) => {
     const [selectedOption, setSelectedOption] = useState(null);
     const [veriffSessionId, setVeriffSessionId] = useState(route?.params?.veriffSessionId || null);
 
-    // Poll Veriff status
-    const { data: veriffStatus, isLoading: isPolling } = useVeriffStatus(
-        veriffSessionId,
-        {
-            enabled: !!veriffSessionId,
-            onSuccess: (data) => {
-                if (data.status === 'approved') {
-                    Alert.alert(
-                        'Verification Successful',
-                        'Your identity has been verified successfully!',
-                        [
-                            {
-                                text: 'Continue',
-                                onPress: () => navigation.navigate('NextScreen') // Navigate to your next screen
-                            }
-                        ]
-                    );
-                } else if (data.status === 'declined') {
-                    Alert.alert(
-                        'Verification Failed',
-                        'Your identity verification was unsuccessful. Please try again or contact support.',
-                        [
-                            {
-                                text: 'Try Again',
-                                onPress: () => setVeriffSessionId(null)
-                            }
-                        ]
-                    );
-                }
-            }
-        }
-    );
+    // // Poll Veriff status
+    // const { data: veriffStatus, isLoading: isPolling } = useVeriffStatus(
+    //     veriffSessionId,
+    //     {
+    //         enabled: !!veriffSessionId,
+    //         onSuccess: (data) => {
+    //             if (data.status === 'approved') {
+    //                 Alert.alert(
+    //                     'Verification Successful',
+    //                     'Your identity has been verified successfully!',
+    //                     [
+    //                         {
+    //                             text: 'Continue',
+    //                             onPress: () => navigation.navigate('VerifiedSuccess') 
+    //                         }
+    //                     ]
+    //                 );
+    //             } else if (data.status === 'declined') {
+    //                 Alert.alert(
+    //                     'Verification Failed',
+    //                     'Your identity verification was unsuccessful. Please try again or contact support.',
+    //                     [
+    //                         {
+    //                             text: 'Try Again',
+    //                             onPress: () => setVeriffSessionId(null)
+    //                         }
+    //                     ]
+    //                 );
+    //             }
+    //         }
+    //     }
+    // );
 
     useEffect(() => {
         if (route?.params?.veriffSessionId) {
@@ -71,62 +71,86 @@ const ChooseVerify = ({ navigation, route }) => {
         navigation.goBack();
     };
 
+    // const startVeriffVerification = async () => {
+    //     if (!veriffSessionId) {
+    //         Alert.alert('Error', 'No verification session available. Please try again.');
+    //         return;
+    //     }
+
+    //     try {
+    //         const veriffConfiguration = {
+    //             sessionId: veriffSessionId,
+    //             // Optional configuration
+    //             locale: 'en', // or get from your language context
+    //             theme: 'dark', // to match your app theme
+    //         };
+
+    //         // Start Veriff verification
+    //         const result = await Veriff.start(veriffConfiguration);
+            
+    //         console.log('Veriff verification result:', result);
+
+    //         // Handle the result
+    //         if (result.status === 'DONE') {
+    //             // Verification completed - poll for final status
+    //             console.log('Verification completed, waiting for final result...');
+                //  navigation.navigate('VerifiedSuccess');
+    //         } else if (result.status === 'CANCELED') {
+    //             console.log('Verification was canceled by user');
+    //             Alert.alert(
+    //                 'Verification Canceled',
+    //                 'You canceled the verification process. You can try again anytime.',
+    //                 [
+    //                     {
+    //                         text: 'OK',
+    //                         onPress: () => navigation.goBack()
+    //                     }
+    //                 ]
+    //             );
+    //         } else if (result.status === 'ERROR') {
+    //             console.error('Verification error:', result.error);
+    //             Alert.alert(
+    //                 'Verification Error',
+    //                 'There was an error during verification. Please try again.',
+    //                 [
+    //                     {
+    //                         text: 'Try Again',
+    //                         onPress: () => startVeriffVerification()
+    //                     }
+    //                 ]
+    //             );
+    //         }
+
+    //     } catch (error) {
+    //         console.error('Failed to start Veriff verification:', error);
+    //         Alert.alert(
+    //             'Error',
+    //             'Failed to start verification. Please check your connection and try again.'
+    //         );
+    //     }
+    // };
+
     const startVeriffVerification = async () => {
         if (!veriffSessionId) {
             Alert.alert('Error', 'No verification session available. Please try again.');
             return;
         }
-
-        try {
-            const veriffConfiguration = {
-                sessionId: veriffSessionId,
-                // Optional configuration
-                locale: 'en', // or get from your language context
-                theme: 'dark', // to match your app theme
-            };
-
-            // Start Veriff verification
-            const result = await Veriff.start(veriffConfiguration);
-            
-            console.log('Veriff verification result:', result);
-
-            // Handle the result
-            if (result.status === 'DONE') {
-                // Verification completed - poll for final status
-                console.log('Verification completed, waiting for final result...');
-            } else if (result.status === 'CANCELED') {
-                console.log('Verification was canceled by user');
-                Alert.alert(
-                    'Verification Canceled',
-                    'You canceled the verification process. You can try again anytime.',
-                    [
-                        {
-                            text: 'OK',
-                            onPress: () => navigation.goBack()
-                        }
-                    ]
-                );
-            } else if (result.status === 'ERROR') {
-                console.error('Verification error:', result.error);
-                Alert.alert(
-                    'Verification Error',
-                    'There was an error during verification. Please try again.',
-                    [
-                        {
-                            text: 'Try Again',
-                            onPress: () => startVeriffVerification()
-                        }
-                    ]
-                );
-            }
-
-        } catch (error) {
-            console.error('Failed to start Veriff verification:', error);
+    
+        // Demo: Show success message and navigate
+        console.log('Demo: Starting verification process...');
+        
+        setTimeout(() => {
             Alert.alert(
-                'Error',
-                'Failed to start verification. Please check your connection and try again.'
+                'Verification Successful',
+                'Your identity has been verified successfully!',
+                [
+                    {
+                        text: 'Continue',
+                        onPress: () => navigation.navigate('IDScan') // Change to your actual next screen
+                    }
+                ]
             );
-        }
+        }, 1500); // 1.5 second delay to simulate verification
     };
 
     const handleIDPhoto = () => {
@@ -212,7 +236,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                 </View>
 
                                 {/* Show verification status if polling */}
-                                {isPolling && veriffSessionId && (
+                                {/* {isPolling && veriffSessionId && (
                                     <View className="w-full p-4 bg-yellow-900/20 rounded-lg border border-yellow-600">
                                         <Text className="text-yellow-400 text-center font-PoppinsMedium">
                                             Verification in progress...
@@ -221,7 +245,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                             Status: {veriffStatus?.status || 'Processing'}
                                         </Text>
                                     </View>
-                                )}
+                                )} */}
 
                                 {/* Verification Options */}
                                 <View className="w-full flex-col justify-start items-start gap-4">
@@ -236,7 +260,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image
-                                                source={require('../../assets/icons/pic_id.png')}
+                                                source={require('../../../assets/icons/pic_id.png')}
                                                 className="w-[32px] h-[32px]"
                                                 resizeMode="contain"
                                             />
@@ -262,7 +286,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image
-                                                source={require('../../assets/icons/face_recognition.png')}
+                                                source={require('../../../assets/icons/face_recognition.png')}
                                                 className="w-[32px] h-[32px]"
                                                 resizeMode="contain"
                                             />
@@ -299,7 +323,7 @@ const ChooseVerify = ({ navigation, route }) => {
                     <View className="flex-row justify-start items-start gap-2">
                         <View className="w-6 h-6 relative overflow-hidden justify-center items-center">
                             <Image
-                                source={require('../../assets/icons/shield.png')}
+                                source={require('../../../assets/icons/shield.png')}
                                 className="w-[20px] h-[20px]"
                                 resizeMode="contain"
                             />

@@ -14,13 +14,13 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { useCompleteStageThree } from "../../api/hooks/useOnboarding";
+import { useCompleteStageThree } from "../../../api/hooks/useOnboarding";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const VerifyIndentity = ({ navigation, route }) => {
@@ -47,26 +47,41 @@ const VerifyIndentity = ({ navigation, route }) => {
         navigation.goBack();
     };
 
+    // const handleNext = async () => {
+    //     setLoading(true);
+        
+    //     try {
+    //         // Get user ID from AsyncStorage (stored during registration)
+    //         const userId = await AsyncStorage.getItem('@spooned_user_id');
+            
+    //         if (userId) {
+    //             // This will trigger the onSuccess callback above
+    //             await completeStageThree.mutateAsync({ 
+    //                 user_id: userId 
+    //             });
+    //         } else {
+    //             Alert.alert('Error', 'User not found. Please sign in again.');
+    //             setLoading(false);
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to start verification:', error);
+    //         setLoading(false);
+    //     }
+    // };
+
     const handleNext = async () => {
         setLoading(true);
         
-        try {
-            // Get user ID from AsyncStorage (stored during registration)
-            const userId = await AsyncStorage.getItem('@spooned_user_id');
-            
-            if (userId) {
-                // This will trigger the onSuccess callback above
-                await completeStageThree.mutateAsync({ 
-                    user_id: userId 
-                });
-            } else {
-                Alert.alert('Error', 'User not found. Please sign in again.');
-                setLoading(false);
-            }
-        } catch (error) {
-            console.error('Failed to start verification:', error);
+        // Demo: Simulate a small delay then navigate
+        setTimeout(() => {
             setLoading(false);
-        }
+            console.log('Demo: Navigating to verification screen');
+            
+            // Navigate to next screen with a demo session ID
+            navigation.navigate('ChooseVerify', {
+                veriffSessionId: 'demo-session-123'
+            });
+        }, 1000); // 1 second delay to show loading state
     };
 
     return (
@@ -146,7 +161,7 @@ const VerifyIndentity = ({ navigation, route }) => {
                                 <View className="w-64 h-64 bg-pink-200 rounded-full border border-pink-800 flex-col justify-center items-center gap-2">
                                     <View className="w-16 h-16 relative overflow-hidden justify-center items-center">
                                         <Image
-                                            source={require('../../assets/icons/camera.png')}
+                                            source={require('../../../assets/icons/camera.png')}
                                             className="w-16 h-16"
                                             resizeMode="contain"
                                         />
