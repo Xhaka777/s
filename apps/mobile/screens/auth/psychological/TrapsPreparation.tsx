@@ -14,6 +14,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, ThirdUnion } from '../../../components';
 import { ArrowLeft, Mic } from 'lucide-react-native';
 import ProcessingModal from '../../../components/ProcessingModal';
+import Config from 'react-native-config';
+
 
 // LiveKit imports for HeyGen integration
 import {
@@ -33,7 +35,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 // HeyGen API Configuration (Official approach)
 const API_CONFIG = {
-    apiKey: "Yzc3NGI1M2RhOGU4NDQ5ZDkyYWEwMjVmYzQ3ZjFmMDAtMTc1MDE3MTMzNg==",
+    apiKey: Config.HEYGEN_API_KEY,
     serverUrl: "https://api.heygen.com",
 };
 
