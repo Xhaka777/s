@@ -14,19 +14,18 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation/AuthNavigator";
+import { Button, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
-import { useCompleteStageThree } from "../../api/hooks/useOnboarding";
+import { useCompleteStageThree } from "../../../api/hooks/useOnboarding";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const VerifyIndentity = ({ navigation, route }) => {
     const [isReady, setIsReady] = useState(false);
     const [loading, setLoading] = useState(false);
-
-
 
     const completeStageThree = useCompleteStageThree({
         onSuccess: (response) => {
@@ -44,35 +43,46 @@ const VerifyIndentity = ({ navigation, route }) => {
         },
     });
 
-
     const handleBack = () => {
         navigation.goBack();
     };
 
-    // Usage:
-    // await completeStageThree.mutateAsync({ user_id: 'some-uuid-here' });
-     const handleNext = async () => {
+    // const handleNext = async () => {
+    //     setLoading(true);
+        
+    //     try {
+    //         // Get user ID from AsyncStorage (stored during registration)
+    //         const userId = await AsyncStorage.getItem('@spooned_user_id');
+            
+    //         if (userId) {
+    //             // This will trigger the onSuccess callback above
+    //             await completeStageThree.mutateAsync({ 
+    //                 user_id: userId 
+    //             });
+    //         } else {
+    //             Alert.alert('Error', 'User not found. Please sign in again.');
+    //             setLoading(false);
+    //         }
+    //     } catch (error) {
+    //         console.error('Failed to start verification:', error);
+    //         setLoading(false);
+    //     }
+    // };
+
+    const handleNext = async () => {
         setLoading(true);
         
-        try {
-            // nuk po di ku me marr
-            // const userId ...
-           
-            // if (userId) {
-            //     // This will trigger the onSuccess callback above
-                // await completeStageThree.mutateAsync({ 
-                //     user_id: userId 
-                // });
-            // } else {
-            //     Alert.alert('Error', 'User not found. Please sign in again.');
-            //     setLoading(false);
-            // }
-        } catch (error) {
-            console.error('Failed to start verification:', error);
+        // Demo: Simulate a small delay then navigate
+        setTimeout(() => {
             setLoading(false);
-        }
+            console.log('Demo: Navigating to verification screen');
+            
+            // Navigate to next screen with a demo session ID
+            navigation.navigate('ChooseVerify', {
+                veriffSessionId: 'demo-session-123'
+            });
+        }, 1000); // 1 second delay to show loading state
     };
-
 
     return (
         <View className="flex-1 bg-black">
@@ -122,8 +132,8 @@ const VerifyIndentity = ({ navigation, route }) => {
                         >
                             <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
                         </TouchableOpacity>
-
                     </View>
+                    
                     {/* Main Content */}
                     <View className="flex-1 justify-center items-center gap-6">
                         <View className="w-full flex-col justify-start items-start gap-6">
@@ -142,7 +152,7 @@ const VerifyIndentity = ({ navigation, route }) => {
                                         <Text className="text-sm leading-4">
                                             <Text className="text-gray-400 font-Poppins">Can we ask for your ID and a Selfie ?{'\n'}It's takes </Text>
                                             <Text className="text-white font-PoppinsMedium">2 minutes</Text>
-                                            <Text className="text-gray-400 font-Poppins"> . We need to identify only real profiles in out application.</Text>
+                                            <Text className="text-gray-400 font-Poppins"> . We need to identify only real profiles in our application.</Text>
                                         </Text>
                                     </View>
                                 </View>
@@ -151,7 +161,7 @@ const VerifyIndentity = ({ navigation, route }) => {
                                 <View className="w-64 h-64 bg-pink-200 rounded-full border border-pink-800 flex-col justify-center items-center gap-2">
                                     <View className="w-16 h-16 relative overflow-hidden justify-center items-center">
                                         <Image
-                                            source={require('../../assets/icons/camera.png')}
+                                            source={require('../../../assets/icons/camera.png')}
                                             className="w-16 h-16"
                                             resizeMode="contain"
                                         />
@@ -168,6 +178,7 @@ const VerifyIndentity = ({ navigation, route }) => {
                         title="I'm ready to answer"
                         onPress={handleNext}
                         variant="primary"
+                        disabled={loading}
                     />
 
                     {/* Privacy Notice */}
@@ -176,13 +187,12 @@ const VerifyIndentity = ({ navigation, route }) => {
                             <CheckSquare size={16} color="#FFFFFF" strokeWidth={1.5} />
                         </View>
                         <Text className="flex-1 text-white text-base font-Poppins leading-4">
-                            We never share this anyone and it won't be on your profile!
+                            We never share this with anyone and it won't be on your profile!
                         </Text>
                     </View>
                 </View>
             </SafeAreaView>
-
-        </View >
+        </View>
     );
 }
 

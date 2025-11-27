@@ -13,9 +13,9 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../navigation/AuthNavigator";
-import { Button, RadialGradientContent, SecUnion, ThirdUnion } from "../../components";
-import { useLanguage } from "../../contexts/LanguageContext";
+import type { AuthStackParamList } from "../../../navigation";
+import { Button, RadialGradientContent, SecUnion, ThirdUnion } from "../../../components";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
@@ -28,13 +28,17 @@ const VerificationFailed = ({ navigation, route }) => {
         navigation.goBack();
     }
 
-    
+
 
     const handleTryAgain = () => {
         setIsLoading(true);
         // Add your retry logic here
         // For example, after API call completes:
         // setIsLoading(false);
+        setTimeout(() => {
+            setIsLoading(false);
+            navigation.navigate('WelcomeQuestionnaire');
+        }, 3000);
     };
 
 
@@ -93,7 +97,7 @@ const VerificationFailed = ({ navigation, route }) => {
                         <View className="w-full flex-col justify-center items-center gap-8">
                             {/* RadialGradientContent */}
                             <RadialGradientContent
-                                imageSource={require('../../assets/icons/Frame.png')}
+                                imageSource={require('../../../assets/icons/Frame.png')}
                                 imageStyle={{ width: 40, height: 40 }}
                             />
 
@@ -118,6 +122,7 @@ const VerificationFailed = ({ navigation, route }) => {
                     variant='primary'
                     loading={isLoading}
                     disabled={isLoading}
+                    style={{ marginHorizontal: 20 }}
                 />
             </SafeAreaView>
         </View>

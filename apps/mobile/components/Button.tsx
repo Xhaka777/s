@@ -10,7 +10,7 @@ import {
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary';
+  variant?: 'primary' | 'secondary' | 'outlined';
   disabled?: boolean;
   loading?: boolean;
   style?: ViewStyle;
@@ -31,8 +31,9 @@ export default function Button({
   
   // Variant-specific classes
   const variantClasses = {
-    primary: "bg-primary",  // Using your custom primary color
-    secondary: "bg-white border border-gray-200"
+    primary: "bg-primary",
+    secondary: "bg-white border border-gray-200",
+    outlined: "bg-transparent border-2 border-white"
   };
   
   // State classes
@@ -45,7 +46,8 @@ export default function Button({
   const baseTextClasses = "text-base font-PoppinsMedium";
   const textColorClasses = {
     primary: "text-white",
-    secondary: "text-black"
+    secondary: "text-black",
+    outlined: "text-white"
   };
   const disabledTextClasses = disabled ? "opacity-70" : "";
   
@@ -70,7 +72,7 @@ export default function Button({
     >
       {loading ? (
         <ActivityIndicator 
-          color={variant === 'primary' ? '#FFFFFF' : '#000000'} 
+          color={variant === 'outlined' ? '#FFFFFF' : variant === 'primary' ? '#FFFFFF' : '#000000'} 
           size="small" 
         />
       ) : (
