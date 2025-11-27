@@ -4,20 +4,132 @@ import {
     Text,
     TouchableOpacity,
     StatusBar,
-    ImageBackground,
     Dimensions,
     SafeAreaView,
     Image,
     Animated,
+    Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, ThirdUnion } from '../../../components';
 import { ArrowLeft, Mic } from 'lucide-react-native';
 import ProcessingModal from '../../../components/ProcessingModal';
 
+// LiveKit imports for HeyGen integration
+import {
+    LiveKitRoom,
+    VideoTrack,
+    useTracks,
+    isTrackReference,
+    registerGlobals,
+    AudioSession,
+} from '@livekit/react-native';
+import { Track } from 'livekit-client';
+
+// Register LiveKit globals
+registerGlobals();
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// Recording Waves Component
+// HeyGen API Configuration (Official approach)
+const API_CONFIG = {
+    apiKey: "Yzc3NGI1M2RhOGU4NDQ5ZDkyYWEwMjVmYzQ3ZjFmMDAtMTc1MDE3MTMzNg==",
+    serverUrl: "https://api.heygen.com",
+};
+
+// Video Track Component (must be inside LiveKit room)
+const VideoTrackView = ({ onAvatarReady, avatarInitializing }) => {
+    const tracks = useTracks([Track.Source.Camera], { onlySubscribed: true });
+
+    useEffect(() => {
+        if (tracks && tracks.length > 0 && !avatarInitializing) {
+            onAvatarReady();
+        }
+    }, [tracks, avatarInitializing, onAvatarReady]);
+
+    return (
+        <View style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+        }}>
+            {tracks.map((track, idx) =>
+                isTrackReference(track) ? (
+                    <VideoTrack
+                        key={idx}
+                        style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                        }}
+                        trackRef={track}
+                        objectFit="cover"
+                    />
+                ) : null
+            )}
+        </View>
+    );
+};
+
+// HeyGen Avatar Component
+const HeyGenAvatar = ({ 
+    isVisible, 
+    onAvatarReady, 
+    onAvatarError,
+    sessionData,
+    avatarInitializing 
+}) => {
+    if (!isVisible || !sessionData.wsUrl || !sessionData.token) {
+        return (
+            <View style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                justifyContent: 'center',
+                alignItems: 'center'
+            }}>
+                <Text style={{ color: 'white', fontSize: 18, marginBottom: 20 }}>
+                    Preparing your session...
+                </Text>
+                <View style={{
+                    width: 50,
+                    height: 50,
+                    borderRadius: 25,
+                    borderWidth: 3,
+                    borderColor: '#FF6B9D',
+                    borderTopColor: 'transparent',
+                }} />
+            </View>
+        );
+    }
+
+    return (
+        <LiveKitRoom
+            serverUrl={sessionData.wsUrl}
+            token={sessionData.token}
+            connect={true}
+            options={{
+                adaptiveStream: { pixelDensity: "screen" },
+            }}
+            audio={false}
+            video={false}
+        >
+            <VideoTrackView 
+                onAvatarReady={onAvatarReady}
+                avatarInitializing={avatarInitializing}
+            />
+        </LiveKitRoom>
+    );
+};
+
+// Recording Waves Component (keeping your existing implementation)
 const RecordingWaves = () => {
     const wave1 = useRef(new Animated.Value(0.3)).current;
     const wave2 = useRef(new Animated.Value(0.5)).current;
@@ -125,17 +237,247 @@ const TrapsPreparation = ({ navigation, route }) => {
     const [showProcessing, setShowProcessing] = useState(false);
     const [processingProgress, setProcessingProgress] = useState(0);
 
-    const nextScreen = route?.params?.nextScreen || 'RelationshipExperience'; // default fallback
+    // HeyGen Avatar states
+    const [wsUrl, setWsUrl] = useState("");
+    const [token, setToken] = useState("");
+    const [sessionToken, setSessionToken] = useState("");
+    const [sessionId, setSessionId] = useState("");
+    const [connected, setConnected] = useState(false);
+    const [webSocket, setWebSocket] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [speaking, setSpeaking] = useState(false);
+    const [avatarInitializing, setAvatarInitializing] = useState(true);
+    const [avatarReady, setAvatarReady] = useState(false);
 
+    const nextScreen = route?.params?.nextScreen || 'RelationshipExperience';
     const isFinalStep = route?.params?.isFinalStep || false;
+
+    // HeyGen API functions (Official approach)
+    const getSessionToken = async () => {
+        try {
+            const response = await fetch(
+                `${API_CONFIG.serverUrl}/v1/streaming.create_token`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "X-Api-Key": API_CONFIG.apiKey,
+                    },
+                }
+            );
+
+            const data = await response.json();
+            console.log("Session token obtained", data.data.token);
+            return data.data.token;
+        } catch (error) {
+            console.error("Error getting session token:", error);
+            throw error;
+        }
+    };
+
+    const startStreamingSession = async (sessionId, sessionToken) => {
+        try {
+            console.log("Starting streaming session with:", { sessionId, sessionToken });
+            const startResponse = await fetch(
+                `${API_CONFIG.serverUrl}/v1/streaming.start`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${sessionToken}`,
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                    }),
+                }
+            );
+
+            const startData = await startResponse.json();
+            console.log("Streaming start response:", startData);
+
+            if (startData) {
+                setConnected(true);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error("Error starting streaming session:", error);
+            return false;
+        }
+    };
+
+    const createSession = async () => {
+        try {
+            setLoading(true);
+            setAvatarInitializing(true);
+            
+            // Get new session token
+            const newSessionToken = await getSessionToken();
+            setSessionToken(newSessionToken);
+
+            const response = await fetch(`${API_CONFIG.serverUrl}/v1/streaming.new`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${newSessionToken}`,
+                },
+                body: JSON.stringify({
+                    quality: "high",
+                    avatar_name: "", // You can specify an avatar here if you have one
+                    voice: {
+                        voice_id: "", // You can specify a voice here if you have one
+                    },
+                    version: "v2",
+                    video_encoding: "H264",
+                }),
+            });
+
+            const data = await response.json();
+            console.log("Streaming new response:", data.data);
+
+            if (data.data) {
+                const newSessionId = data.data.session_id;
+                setSessionId(newSessionId);
+                setWsUrl(data.data.url);
+                setToken(data.data.access_token);
+
+                // Connect WebSocket
+                const params = new URLSearchParams({
+                    session_id: newSessionId,
+                    session_token: newSessionToken,
+                    silence_response: "false",
+                    stt_language: "en",
+                });
+
+                const wsUrl = `wss://${
+                    new URL(API_CONFIG.serverUrl).hostname
+                }/v1/ws/streaming.chat?${params}`;
+
+                const ws = new WebSocket(wsUrl);
+                setWebSocket(ws);
+
+                // Start streaming session
+                await startStreamingSession(newSessionId, newSessionToken);
+                setAvatarInitializing(false);
+            }
+        } catch (error) {
+            console.error("Error creating session:", error);
+            Alert.alert('Error', 'Failed to initialize avatar. Please try again.');
+            setAvatarInitializing(false);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const sendTextToAvatar = async (text) => {
+        if (!sessionId || !sessionToken) {
+            console.error('No active session');
+            return;
+        }
+
+        try {
+            setSpeaking(true);
+
+            const response = await fetch(
+                `${API_CONFIG.serverUrl}/v1/streaming.task`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${sessionToken}`,
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        text: text,
+                        task_type: "talk",
+                    }),
+                }
+            );
+
+            const data = await response.json();
+            console.log("Task response:", data);
+        } catch (error) {
+            console.error("Error sending text to avatar:", error);
+        } finally {
+            // Simulate speaking duration based on text length
+            const estimatedDuration = Math.max(2000, text.length * 100);
+            setTimeout(() => setSpeaking(false), estimatedDuration);
+        }
+    };
+
+    const closeSession = async () => {
+        try {
+            setLoading(true);
+            if (!sessionId || !sessionToken) {
+                console.log("No active session");
+                return;
+            }
+
+            const response = await fetch(
+                `${API_CONFIG.serverUrl}/v1/streaming.stop`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${sessionToken}`,
+                    },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                    }),
+                }
+            );
+
+            // Close WebSocket
+            if (webSocket) {
+                webSocket.close();
+                setWebSocket(null);
+            }
+
+            // Reset all states
+            setConnected(false);
+            setSessionId("");
+            setSessionToken("");
+            setWsUrl("");
+            setToken("");
+            setSpeaking(false);
+            setAvatarReady(false);
+
+            console.log("Session closed successfully");
+        } catch (error) {
+            console.error("Error closing session:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // Setup audio session and initialize avatar when component mounts
+    useEffect(() => {
+        const setupAudio = async () => {
+            await AudioSession.startAudioSession();
+        };
+
+        setupAudio();
+        createSession();
+        
+        return () => {
+            AudioSession.stopAudioSession();
+            closeSession();
+        };
+    }, []);
+
+    // Send introduction text when avatar is ready
+    useEffect(() => {
+        if (avatarReady && connected) {
+            const introText = "Hello! I'm here to help you with your psychological preparation. Please feel free to share your thoughts when you're ready.";
+            sendTextToAvatar(introText);
+        }
+    }, [avatarReady, connected]);
 
     const handleRecordingToggle = () => {
         if (isRecording) {
-            // Stop recording
             setIsRecording(false);
             setRecordingComplete(true);
         } else {
-            // Start recording
             setIsRecording(true);
             setRecordingComplete(false);
         }
@@ -146,45 +488,63 @@ const TrapsPreparation = ({ navigation, route }) => {
         setIsRecording(false);
     };
 
-    const handleSaveAnswer = () => {
+    const handleSaveAnswer = async () => {
+        if (recordingComplete) {
+            // Send response to avatar (in real app, this would be the transcribed text)
+            const userResponse = "Thank you for the question. I've given this some thought and feel ready to proceed.";
+            await sendTextToAvatar(userResponse);
+        }
+
         if (isFinalStep) {
-            // Show processing modal
             setShowProcessing(true);
             setProcessingProgress(0);
     
-            // Simulate progress
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => {
                     if (prev >= 100) {
                         clearInterval(progressInterval);
-                        return 100; // Stop at 100 and keep modal visible
+                        return 100;
                     }
                     return prev + 10;
                 });
             }, 200);
         } else {
-            // Normal navigation for non-final steps
             navigation.navigate(nextScreen);
         }
     };
 
-    const handleProcessingContinue = () => {
+    const handleProcessingContinue = async () => {
         setShowProcessing(false);
-        setProcessingProgress(0); // Reset progress
+        setProcessingProgress(0);
+        await closeSession();
         navigation.navigate('Conclusion');
     };
+
+    const handleAvatarReady = () => {
+        setAvatarReady(true);
+    };
+
+    const handleAvatarError = (error) => {
+        console.error('Avatar error:', error);
+        setAvatarInitializing(false);
+        Alert.alert('Avatar Error', 'There was an issue with the avatar. Please try again.');
+    };
+
     return (
         <View className="flex-1 bg-black">
             <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
 
-            {/* Background Image */}
-            <ImageBackground
-                source={require('../../../assets/images/psychological.png')}
-                className="flex-1"
-                style={{ width: screenWidth, height: screenHeight }}
-                resizeMode="cover"
-            >
-                {/* Overlay */}
+            {/* HeyGen Avatar Background */}
+            <View style={{ flex: 1, width: screenWidth, height: screenHeight }}>
+                <HeyGenAvatar
+                    isVisible={connected}
+                    onAvatarReady={handleAvatarReady}
+                    onAvatarError={handleAvatarError}
+                    sessionData={{ wsUrl, token, sessionId, sessionToken }}
+                    avatarInitializing={avatarInitializing}
+                />
+
+                {/* Overlay for UI elements */}
                 <View className="absolute inset-0 z-0">
                     {/* Pink glow */}
                     <View
@@ -208,10 +568,13 @@ const TrapsPreparation = ({ navigation, route }) => {
                 {/* Main Content */}
                 <SafeAreaView className="flex-1 justify-between">
                     {/* Header */}
-                    <View className="px-5" style={{ marginTop: insets.top }}>
+                    <View className="px-5 mt-3">
                         <View className="flex-row justify-between items-center">
                             <TouchableOpacity
-                                onPress={() => navigation.goBack()}
+                                onPress={async () => {
+                                    await closeSession();
+                                    navigation.goBack();
+                                }}
                                 className="w-6 h-6 justify-center items-center"
                                 activeOpacity={0.7}
                             >
@@ -243,14 +606,17 @@ const TrapsPreparation = ({ navigation, route }) => {
                             }}
                         >
                             {!isRecording && !recordingComplete ? (
-                                // BEFORE recording content
                                 <View className="items-center justify-center" style={{ minHeight: 56 }}>
                                     <Text className="text-white text-sm font-Poppins text-center leading-6">
-                                        Allow yourself enough calm to reflect on each question and sense what feels true for you before
+                                        {avatarInitializing 
+                                            ? "Preparing your session..." 
+                                            : speaking 
+                                            ? "Sofia is speaking..." 
+                                            : "Allow yourself enough calm to reflect on each question and sense what feels true for you"
+                                        }
                                     </Text>
                                 </View>
                             ) : (
-                                // DURING recording content (stays visible even after stopping)
                                 <View className="items-center justify-center">
                                     <View className="flex-row items-center gap-3 mt-3">
                                         <Image
@@ -260,7 +626,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                                         />
                                         <View className="flex-row items-center gap-3">
                                             <View>
-                                                <Text className="text-white font-PoppinsMedium">Sofia</Text>
+                                                <Text className="text-white font-PoppinsMedium">You</Text>
                                                 <Text className="text-gray-300 text-xs">Recording</Text>
                                             </View>
                                             <RecordingWaves />
@@ -286,42 +652,13 @@ const TrapsPreparation = ({ navigation, route }) => {
 
                         {/* Conditional Button Rendering */}
                         {recordingComplete ? (
-                            // Show Discard and Save Answer buttons after recording
                             <View className="flex-row justify-center items-center gap-3 mb-5">
-                                {/* <TouchableOpacity
-                                    onPress={handleDiscard}
-                                    className="rounded-full px-6 py-3.5 flex-row items-center gap-2 bg-transparent border-2 border-white flex-1"
-                                    style={{
-                                        maxWidth: '48%',
-                                    }}
-                                    activeOpacity={0.8}
-                                >
-                                    <Text className="text-white text-base font-PoppinsMedium">✕</Text>
-                                    <Text className="text-white text-base font-PoppinsMedium">
-                                        Discard
-                                    </Text>
-                                </TouchableOpacity> */}
-
                                 <Button
                                     title="x Discard"
                                     onPress={handleDiscard}
                                     variant="outlined"
                                 />
 
-
-                                {/* <TouchableOpacity
-                                    onPress={handleSaveAnswer}
-                                    className="rounded-full px-6 py-3.5 flex-row items-center justify-center gap-2 flex-1"
-                                    style={{
-                                        backgroundColor: '#C2185B',
-                                        maxWidth: '48%',
-                                    }}
-                                    activeOpacity={0.8}
-                                >
-                                    <Text className="text-white text-base font-PoppinsMedium">
-                                        Save answer
-                                    </Text>
-                                </TouchableOpacity> */}
                                 <Button
                                     title='Save answer'
                                     onPress={handleSaveAnswer}
@@ -336,7 +673,6 @@ const TrapsPreparation = ({ navigation, route }) => {
                                 />
                             </View>
                         ) : (
-                            // Show original recording buttons
                             <View className="flex-row justify-center items-center gap-3 mb-5">
                                 <TouchableOpacity
                                     onPress={handleRecordingToggle}
@@ -352,6 +688,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                                         elevation: 2,
                                     }}
                                     activeOpacity={0.8}
+                                    disabled={avatarInitializing}
                                 >
                                     <Mic size={20} color={isRecording ? "#FFFFFF" : "#000000"} />
                                     <Text className={`text-base font-PoppinsMedium ${isRecording ? 'text-white' : 'text-black'
@@ -365,6 +702,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                                     style={{ backgroundColor: '#99225E' }}
                                     activeOpacity={0.8}
                                     onPress={() => navigation.navigate('PsychologicalChat')}
+                                    disabled={avatarInitializing}
                                 >
                                     <Image
                                         source={require('../../../assets/icons/message.png')}
@@ -376,7 +714,8 @@ const TrapsPreparation = ({ navigation, route }) => {
                         )}
                     </View>
                 </SafeAreaView>
-            </ImageBackground>
+            </View>
+            
             <ProcessingModal
                 visible={showProcessing}
                 progress={processingProgress}

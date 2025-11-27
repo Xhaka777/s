@@ -24,6 +24,7 @@ const UploadPhoto = () => {
     const [selectedImage, setSelectedImage] = useState(null);
 
     const AUTH_COMPLETED_KEY = '@spooned:auth_completed';
+    const PROFILE_IMAGE_KEY = '@spooned:profile_image'; // Add this key
 
     const pickImage = async () => {
         try {
@@ -85,6 +86,9 @@ const UploadPhoto = () => {
         try {
             console.log('Done pressed with image:', selectedImage);
 
+            // Save the profile image path to AsyncStorage
+            await AsyncStorage.setItem(PROFILE_IMAGE_KEY, selectedImage);
+            
             // Mark authentication as completed
             await AsyncStorage.setItem(AUTH_COMPLETED_KEY, 'true');
 
@@ -106,6 +110,9 @@ const UploadPhoto = () => {
         try {
             console.log('Skip pressed');
 
+            // Clear any previously saved profile image
+            await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
+            
             // Mark authentication as completed even if skipped
             await AsyncStorage.setItem(AUTH_COMPLETED_KEY, 'true');
 
@@ -125,8 +132,10 @@ const UploadPhoto = () => {
         setSelectedImage(null);
     };
 
+    // Rest of your component remains the same...
     return (
         <View style={{ flex: 1, backgroundColor: '#000000' }}>
+            {/* Your existing JSX remains unchanged */}
             <StatusBar barStyle="light-content" backgroundColor="#000000" />
 
             <View className="absolute inset-0 z-0">

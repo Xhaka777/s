@@ -103,6 +103,7 @@ const VerifiedSuccess = ({ navigation, route }) => {
                     title='Continue'
                     onPress={() => navigation.navigate('VerificationFailed')}
                     variant='primary'
+                    style={{ marginHorizontal: 20 }}
                 />
             </SafeAreaView>
 

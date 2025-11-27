@@ -239,12 +239,14 @@ const CountrySetupScreen = ({ navigation, route }) => {
 
                 {/* Content Layer - Normal flow on top */}
                 <SafeAreaView className="flex-1 relative z-10">
-                    <ScrollView
+                    {/* <ScrollView
                         className="flex-1 px-5"
                         showsVerticalScrollIndicator={false}
                         keyboardShouldPersistTaps="handled"
                         onScrollBeginDrag={closeDropdowns}
-                    >
+                    > */}
+                    <View className="flex-1 px-5">
+
                         {/* Header */}
                         <View className="flex-row items-center justify-between pt-5 pb-2.5">
                             <TouchableOpacity
@@ -349,13 +351,15 @@ const CountrySetupScreen = ({ navigation, route }) => {
                             {/* Add extra space to prevent button overlap with dropdown */}
                             <View className="h-12" />
                         </View>
-                    </ScrollView>
+                        </View>
+                    {/* </ScrollView> */}
 
                     <Button
                         title={isFormValid ? 'Continue to Verification' : 'Next'}
                         onPress={handleNext}
                         variant='primary'
                         disabled={!isFormValid}
+                        style={{ paddingHorizontal: 20, marginHorizontal: 20 }}
                     />
                 </SafeAreaView>
             </KeyboardAvoidingView>

@@ -33,42 +33,10 @@ const WelcomePsychological = ({ navigation, route }) => {
                 style={{ width: screenWidth, height: screenHeight }}
                 resizeMode="cover"
             >
-                {/* Overlay gradient and effects above ImageBackground */}
-                <View className="absolute inset-0 z-0">
-                    {/* Background gradient */}
-                    {/* <Svg height="50%" width="100%" className="absolute top-0 left-0">
-                        <Defs>
-                            <RadialGradient
-                                id="pinkGlow"
-                                cx="0%" cy="10%" r="90%"
-                                gradientUnits="userSpaceOnUse"
-                            >
-                                <Stop offset="0%" stopColor="#99225E" stopOpacity="0.4" />
-                                <Stop offset="100%" stopColor="#000" stopOpacity="0" />
-                            </RadialGradient>
-                        </Defs>
-                        <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
-                    </Svg> */}
-
-                    {/* Glow background effect */}
-                    <View
-                        className="absolute"
-                        style={{
-                            left: -264,           // X position from Figma
-                            top: 599,            // Y position from Figma  
-                            width: 524,          // Width from Figma
-                            height: 237,         // Height from Figma
-                            transform: [{ rotate: '19,68deg' }], // No rotation
-                            zIndex: 1,           // Adjust as needed for layering
-                        }}
-                    >
-                        <ThirdUnion />
-                    </View>
-                </View>
 
                 {/* Status Bar and Header */}
                 <SafeAreaView className="flex-1 justify-between">
-                    <View className="px-5" style={{ marginTop: insets.top }}>
+                    <View className="px-5 mt-3">
                         {/* Navigation Header */}
                         <View className="flex-row justify-between items-center">
                             <TouchableOpacity

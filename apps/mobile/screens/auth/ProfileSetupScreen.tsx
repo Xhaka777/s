@@ -266,6 +266,7 @@ export default function ProfileSetupScreen() {
                                     keyboardType="numeric"
                                     maxLength={10}
                                     editable={!loading}
+                                    onPress={handleBirthdayPress}
                                     rightIcon={
                                         <TouchableOpacity onPress={handleBirthdayPress}>
                                             <Calendar size={20} color="#999999" strokeWidth={1.5} />

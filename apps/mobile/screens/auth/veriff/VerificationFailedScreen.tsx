@@ -13,7 +13,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { useTranslation } from "react-i18next";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { AuthStackParamList } from "../../../navigation"; 
+import type { AuthStackParamList } from "../../../navigation";
 import { Button, RadialGradientContent, SecUnion, ThirdUnion } from "../../../components";
 import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -122,6 +122,7 @@ const VerificationFailed = ({ navigation, route }) => {
                     variant='primary'
                     loading={isLoading}
                     disabled={isLoading}
+                    style={{ marginHorizontal: 20 }}
                 />
             </SafeAreaView>
         </View>

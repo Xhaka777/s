@@ -169,7 +169,7 @@ const EarlyInfluences = ({ navigation, route }) => {
 
             <SafeAreaView className="flex-1 relative z-10">
                 {/* Header */}
-                <View className="px-5" style={{ marginTop: insets.top }}>
+                <View className="px-5 mt-3">
                     {/* Navigation Header */}
                     <View className="flex-row justify-between items-center">
                         <TouchableOpacity

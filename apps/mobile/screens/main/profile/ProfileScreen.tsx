@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,21 +13,41 @@ import { ArrowLeft, User, Settings } from 'lucide-react-native';
 import Svg, { Circle, Defs, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { ThirdUnion } from '../../../components';
 import MenuItem from '../../../components/MenuItem';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ProfileStackParamList } from '../../../navigation/ProfileNavigator';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type ProfileNavigationProp = NativeStackNavigationProp<ProfileStackParamList, 'ProfileMain'>;
 
-
 const ProfileScreen: React.FC = () => {
-
   const navigation = useNavigation<ProfileNavigationProp>();
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  const PROFILE_IMAGE_KEY = '@spooned:profile_image';
+
+  // Load profile image when screen focuses
+  useFocusEffect(
+    React.useCallback(() => {
+      loadProfileImage();
+    }, [])
+  );
+
+  const loadProfileImage = async () => {
+    try {
+      const savedImage = await AsyncStorage.getItem(PROFILE_IMAGE_KEY);
+      setProfileImage(savedImage);
+    } catch (error) {
+      console.error('Error loading profile image:', error);
+    }
+  };
 
   const handleEditProfile = () => {
     navigation.navigate('EditProfile');
   };
 
+  // Default image fallback
+  const defaultImage = 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face';
 
   return (
     <View className="flex-1 bg-black">
@@ -54,12 +74,12 @@ const ProfileScreen: React.FC = () => {
         <View
           className="absolute"
           style={{
-            left: -26,           // X position from Figma
-            top: -54,            // Y position from Figma  
-            width: 524,          // Width from Figma
-            height: 237,         // Height from Figma
-            transform: [{ rotate: '20deg' }], // No rotation
-            zIndex: 1,           // Adjust as needed for layering
+            left: -26,
+            top: -54,
+            width: 524,
+            height: 237,
+            transform: [{ rotate: '20deg' }],
+            zIndex: 1,
           }}
         >
           <ThirdUnion />
@@ -74,7 +94,7 @@ const ProfileScreen: React.FC = () => {
             className="w-6 h-6 justify-center items-center mr-4"
             activeOpacity={0.7}
           >
-            <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
+            {/* <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} /> */}
           </TouchableOpacity>
           <View className="flex-1 items-center mr-6">
             <Text className="text-xl font-medium text-white font-Poppins">
@@ -119,7 +139,7 @@ const ProfileScreen: React.FC = () => {
                     stroke="#ec4899"
                     strokeWidth={4}
                     fill="none"
-                    strokeDasharray={`${2 * Math.PI * 75 * 0.4} ${2 * Math.PI * 75}`}
+                    strokeDasharray={`${2 * Math.PI * 75 * 0.4} ${2 * Math.PI * 75}`} // 0.4 for 40%
                     strokeLinecap="round"
                   />
                 </Svg>
@@ -127,7 +147,9 @@ const ProfileScreen: React.FC = () => {
                 {/* Profile Image */}
                 <View className="absolute inset-4 rounded-full overflow-hidden">
                   <Image
-                    source={{ uri: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=300&h=300&fit=crop&crop=face' }}
+                    source={{
+                      uri: profileImage || defaultImage
+                    }}
                     className="w-full h-full"
                     resizeMode="cover"
                   />
@@ -135,13 +157,23 @@ const ProfileScreen: React.FC = () => {
               </View>
 
               {/* Progress indicator */}
-              <View className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
-                <View className="bg-white rounded-full px-3 py-2 border border-gray-300">
-                  <Text className="text-black text-base font-medium font-Poppins">
+              <View
+                className="absolute"
+                style={{
+                  // Calculate position based on the progress percentage (40% = 0.4)
+                  // The circle starts at top (-90deg) and goes clockwise
+                  // 40% of 360deg = 144deg, but since we start at -90deg, it's 144-90 = 54deg
+                  top: 100 - 15 * Math.cos((0.4 * 2 * Math.PI - Math.PI / 2)) + 50, // -20 to center the badge
+                  left: 10 + 15 * Math.sin((0.4 * 2 * Math.PI - Math.PI / 2))  + 35, // -20 to center the badge
+                }}
+              >
+                <View className="bg-white rounded-full px-3 py-2 border border-gray-300 shadow-md">
+                  <Text className="text-black text-sm font-medium font-Poppins">
                     40%
                   </Text>
                 </View>
               </View>
+
             </View>
           </View>
 
@@ -182,6 +214,5 @@ const ProfileScreen: React.FC = () => {
     </View>
   );
 };
-
 
 export default ProfileScreen;
