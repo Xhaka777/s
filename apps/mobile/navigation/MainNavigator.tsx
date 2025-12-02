@@ -1,6 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { StyleSheet, Platform } from 'react-native';
+import { StyleSheet, Platform, Image } from 'react-native';
 import { Home, Calendar, MessageCircle, User } from 'lucide-react-native';
 import HomeScreen from '../screens/main/HomeScreen';
 import EventsScreen from '../screens/main/EventsScreen';
@@ -27,21 +27,44 @@ export default function MainNavigator() {
         tabBarInactiveTintColor: '#8E8E93',
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
+        tabBarHideOnKeyboard: true,
         tabBarIcon: ({ focused, color, size }) => {
           const iconSize = 24;
-          
+          let iconSource;
+
           switch (route.name) {
             case 'Home':
-              return <Home size={iconSize} color={color} strokeWidth={focused ? 2 : 1.5} />;
+              iconSource = require('../assets/icons/home.png');
+              break;
             case 'Events':
-              return <Calendar size={iconSize} color={color} strokeWidth={focused ? 2 : 1.5} />;
+              iconSource = require('../assets/icons/events.png');
+              break;
             case 'Chat':
-              return <MessageCircle size={iconSize} color={color} strokeWidth={focused ? 2 : 1.5} />;
+              iconSource = require('../assets/icons/chat.png');
+              break;
             case 'Profile':
-              return <User size={iconSize} color={color} strokeWidth={focused ? 2 : 1.5} />;
+              iconSource = require('../assets/icons/profile.png');
+              break;
             default:
-              return <Home size={iconSize} color={color} strokeWidth={focused ? 2 : 1.5} />;
+              iconSource = require('../assets/icons/home.png');
+              break;
           }
+
+          return (
+            <Image
+              source={iconSource}
+              style={[
+                styles.tabBarIcon,
+                {
+                  width: iconSize,
+                  height: iconSize,
+                  tintColor: color,
+                  opacity: focused ? 1 : 0.7,
+                }
+              ]}
+              resizeMode="contain"
+            />
+          );
         },
       })}
     >
@@ -66,7 +89,7 @@ export default function MainNavigator() {
           tabBarLabel: 'Chat',
         }}
       />
-    <Tab.Screen
+      <Tab.Screen
         name="Profile"
         component={ProfileNavigator}
         options={{
@@ -79,23 +102,35 @@ export default function MainNavigator() {
 
 const styles = StyleSheet.create({
   tabBar: {
-    height: Platform.OS === 'ios' ? 88 : 64,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
-    backgroundColor: '#1C1C1E',
-    borderTopWidth: 1,
-    borderTopColor: '#333333',
-    elevation: 8,
+    position: 'absolute',
+    bottom: Platform.OS === 'ios' ? 34 : 20,
+    left: 20,
+    right: 20,
+    height: 70,
+    backgroundColor: '#312E36',
+    borderRadius: 35,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderTopWidth: 0,
+    elevation: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    borderWidth: 1,
+    borderColor: '#333333',
+    marginLeft: 10,
+    marginRight: 10,
   },
   tabBarLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
+    marginTop: 2,
   },
   tabBarItem: {
     paddingVertical: 4,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

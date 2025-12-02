@@ -26,6 +26,18 @@ export default function RootNavigator() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const checkAuthInterval = setInterval(async () => {
+      const authCompleted = await AsyncStorage.getItem(AUTH_COMPLETED_KEY);
+      if (authCompleted === 'true' && !isAuthenticated) {
+        setIsAuthenticated(true);
+        await AsyncStorage.removeItem(AUTH_COMPLETED_KEY); // Clean up
+      }
+    }, 500); // Check every 500ms
+
+    return () => clearInterval(checkAuthInterval);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     checkInitialState();
   }, []);
 

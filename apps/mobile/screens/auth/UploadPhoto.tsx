@@ -84,47 +84,21 @@ const UploadPhoto = () => {
         }
 
         try {
-            console.log('Done pressed with image:', selectedImage);
-
-            // Save the profile image path to AsyncStorage
             await AsyncStorage.setItem(PROFILE_IMAGE_KEY, selectedImage);
-            
-            // Mark authentication as completed
             await AsyncStorage.setItem(AUTH_COMPLETED_KEY, 'true');
-
-            // Don't navigate directly - let RootNavigator handle it
-            // The RootNavigator will detect the auth completion and switch to MainNavigator
-            console.log('Authentication completed, RootNavigator will handle navigation');
-
+            console.log('Auth completed, waiting for navigation...');
         } catch (error) {
-            console.error('Error completing authentication:', error);
-            Alert.alert(
-                'Error',
-                'There was an issue completing your setup. Please try again.',
-                [{ text: 'OK' }]
-            );
+            console.error('Error:', error);
         }
     };
 
     const handleSkip = async () => {
         try {
-            console.log('Skip pressed');
-
-            // Clear any previously saved profile image
             await AsyncStorage.removeItem(PROFILE_IMAGE_KEY);
-            
-            // Mark authentication as completed even if skipped
             await AsyncStorage.setItem(AUTH_COMPLETED_KEY, 'true');
-
-            console.log('Authentication completed, RootNavigator will handle navigation');
-
+            console.log('Auth completed, waiting for navigation...');
         } catch (error) {
-            console.error('Error completing authentication:', error);
-            Alert.alert(
-                'Error',
-                'There was an issue completing your setup. Please try again.',
-                [{ text: 'OK' }]
-            );
+            console.error('Error:', error);
         }
     };
 
