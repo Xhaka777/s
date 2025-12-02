@@ -1,7 +1,9 @@
+import { tokenStorage } from "./tokenStorage";
+
 export class ApiClient {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://192.168.0.23:3000') {
+  constructor(baseURL: string = 'http://192.168.1.8:3000') {
     this.baseURL = baseURL;
   }
 
@@ -11,10 +13,13 @@ export class ApiClient {
       method?: 'GET' | 'POST' | 'PUT' | 'DELETE';
       data?: any;
       headers?: Record<string, string>;
+      // token?: string;
     } = {}
   ): Promise<T> {
     const { method = 'GET', data, headers = {} } = options;
     const url = `${this.baseURL}${endpoint}`;
+    const storedToken = await tokenStorage.getToken();
+
 
     console.log(`🌐 API Request: ${method} ${url}`);
     if (data) console.log('📤 Request data:', data);
@@ -24,6 +29,7 @@ export class ApiClient {
         method,
         headers: {
           'Content-Type': 'application/json',
+          ...(storedToken ? { Authorization: `Bearer ${storedToken}` } : {}),
           ...headers,
         },
         ...(data && { body: JSON.stringify(data) }),

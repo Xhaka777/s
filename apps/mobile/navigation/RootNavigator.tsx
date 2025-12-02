@@ -6,6 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthNavigator from './AuthNavigator';
 import MainNavigator from './MainNavigator';
 import { QueryProvider } from '../providers/query';
+import { tokenStorage } from '../api/services/tokenStorage';
+import { onboardingService } from '../api/services/onboarding';
 
 export type RootStackParamList = {
   Auth: undefined;
@@ -25,42 +27,63 @@ export default function RootNavigator() {
 
   useEffect(() => {
     checkInitialState();
-
-    // Set up a listener for auth state changes
-    const interval = setInterval(checkInitialState, 1000); // Check every second
-
-    return () => clearInterval(interval);
   }, []);
 
   const checkInitialState = async () => {
     try {
-      const [authStatus, onboardingStatus] = await Promise.all([
-        AsyncStorage.getItem(AUTH_COMPLETED_KEY),
-        AsyncStorage.getItem(ONBOARDING_COMPLETED_KEY),
-      ]);
+      // Check if we have a valid session token
+      const token = await tokenStorage.getToken();
 
-      const newAuthStatus = authStatus === 'true';
-      const newOnboardingStatus = onboardingStatus === 'true';
+      if (token) {
+        try {
+          // Verify the session with the backend
+          const sessionData = await onboardingService.checkSession(token);
 
-      if (newAuthStatus !== isAuthenticated) {
-        setIsAuthenticated(newAuthStatus);
-      }
-      if (newOnboardingStatus !== hasCompletedOnboarding) {
-        setHasCompletedOnboarding(newOnboardingStatus);
+          if (sessionData.authenticated) {
+            if (sessionData.onbordingCompleted) {
+              // User is authenticated and onboarding is complete
+              setIsAuthenticated(true);
+              await AsyncStorage.setItem(AUTH_COMPLETED_KEY, 'true');
+            } else {
+              // User is authenticated but needs to complete onboarding
+              setIsAuthenticated(false);
+              await AsyncStorage.removeItem(AUTH_COMPLETED_KEY);
+            }
+          } else {
+            // Session is invalid
+            setIsAuthenticated(false);
+            await AsyncStorage.removeItem(AUTH_COMPLETED_KEY);
+            await tokenStorage.clearToken();
+          }
+        } catch (error) {
+          console.error('Session check failed:', error);
+          setIsAuthenticated(false);
+          await AsyncStorage.removeItem(AUTH_COMPLETED_KEY);
+          await tokenStorage.clearToken();
+        }
+      } else {
+        setIsAuthenticated(false);
+        await AsyncStorage.removeItem(AUTH_COMPLETED_KEY);
       }
     } catch (error) {
       console.error('Error checking initial state:', error);
+      setIsAuthenticated(false);
     } finally {
-      if (isLoading) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size='large' color='#B8457B' />
+      </View>
+    )
+  }
+
   return (
     <QueryProvider>
-
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           {!isAuthenticated ? (

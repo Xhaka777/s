@@ -24,7 +24,7 @@
     "@react-navigation/native-stack": "^7.5.1",
     "@shubhamkumarbaranwals/react-native-gradient-border": "^1.0.0",
     "@tanstack/react-query": "^5.90.6",
-    "@veriff/react-native-sdk": "^11.0.0",
+    "@veriff/react-native-sdk": "^10.0.0",
     "i18next": "^25.6.0",
     "livekit-client": "^2.16.0",
     "lucide-react-native": "^0.548.0",
@@ -46,6 +46,7 @@
     "react-native-screens": "^4.18.0",
     "react-native-svg": "^15.14.0",
     "react-native-video": "^6.17.0",
+    "react-native-webview": "^13.16.0",
     "react-native-worklets": "^0.6.1",
     "tailwindcss": "^3.4.18",
     "zod": "^3.25.76"
