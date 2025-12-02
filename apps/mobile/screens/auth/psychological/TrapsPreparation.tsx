@@ -78,12 +78,12 @@ const VideoTrackView = ({ onAvatarReady, avatarInitializing }) => {
 };
 
 // HeyGen Avatar Component
-const HeyGenAvatar = ({ 
-    isVisible, 
-    onAvatarReady, 
+const HeyGenAvatar = ({
+    isVisible,
+    onAvatarReady,
     onAvatarError,
     sessionData,
-    avatarInitializing 
+    avatarInitializing
 }) => {
     if (!isVisible || !sessionData.wsUrl || !sessionData.token) {
         return (
@@ -123,7 +123,7 @@ const HeyGenAvatar = ({
             audio={false}
             video={false}
         >
-            <VideoTrackView 
+            <VideoTrackView
                 onAvatarReady={onAvatarReady}
                 avatarInitializing={avatarInitializing}
             />
@@ -312,7 +312,7 @@ const TrapsPreparation = ({ navigation, route }) => {
         try {
             setLoading(true);
             setAvatarInitializing(true);
-            
+
             // Get new session token
             const newSessionToken = await getSessionToken();
             setSessionToken(newSessionToken);
@@ -325,7 +325,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                 },
                 body: JSON.stringify({
                     quality: "high",
-                    avatar_name: "", // You can specify an avatar here if you have one
+                    avatar_id: "705bd4081d524ad8bf40a8aa24ccf601", // Your custom avatar ID
                     voice: {
                         voice_id: "", // You can specify a voice here if you have one
                     },
@@ -351,9 +351,8 @@ const TrapsPreparation = ({ navigation, route }) => {
                     stt_language: "en",
                 });
 
-                const wsUrl = `wss://${
-                    new URL(API_CONFIG.serverUrl).hostname
-                }/v1/ws/streaming.chat?${params}`;
+                const wsUrl = `wss://${new URL(API_CONFIG.serverUrl).hostname
+                    }/v1/ws/streaming.chat?${params}`;
 
                 const ws = new WebSocket(wsUrl);
                 setWebSocket(ws);
@@ -460,7 +459,7 @@ const TrapsPreparation = ({ navigation, route }) => {
 
         setupAudio();
         createSession();
-        
+
         return () => {
             AudioSession.stopAudioSession();
             closeSession();
@@ -500,7 +499,7 @@ const TrapsPreparation = ({ navigation, route }) => {
         if (isFinalStep) {
             setShowProcessing(true);
             setProcessingProgress(0);
-    
+
             const progressInterval = setInterval(() => {
                 setProcessingProgress(prev => {
                     if (prev >= 100) {
@@ -546,26 +545,6 @@ const TrapsPreparation = ({ navigation, route }) => {
                     avatarInitializing={avatarInitializing}
                 />
 
-                {/* Overlay for UI elements */}
-                <View className="absolute inset-0 z-0">
-                    {/* Pink glow */}
-                    <View
-                        className="absolute"
-                        style={{
-                            left: -264,
-                            top: 599,
-                            width: 524,
-                            height: 237,
-                            transform: [{ rotate: '19.68deg' }],
-                            zIndex: 1,
-                        }}
-                    >
-                        <ThirdUnion />
-                    </View>
-
-                    {/* Bottom fade */}
-                    <View className="absolute bottom-0 left-0 right-0 h-44 bg-gradient-to-t from-black via-black/50 to-transparent opacity-80" />
-                </View>
 
                 {/* Main Content */}
                 <SafeAreaView className="flex-1 justify-between">
@@ -610,11 +589,11 @@ const TrapsPreparation = ({ navigation, route }) => {
                             {!isRecording && !recordingComplete ? (
                                 <View className="items-center justify-center" style={{ minHeight: 56 }}>
                                     <Text className="text-white text-sm font-Poppins text-center leading-6">
-                                        {avatarInitializing 
-                                            ? "Preparing your session..." 
-                                            : speaking 
-                                            ? "Sofia is speaking..." 
-                                            : "Allow yourself enough calm to reflect on each question and sense what feels true for you"
+                                        {avatarInitializing
+                                            ? "Preparing your session..."
+                                            : speaking
+                                                ? "Sofia is speaking..."
+                                                : "Allow yourself enough calm to reflect on each question and sense what feels true for you"
                                         }
                                     </Text>
                                 </View>
@@ -717,7 +696,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                     </View>
                 </SafeAreaView>
             </View>
-            
+
             <ProcessingModal
                 visible={showProcessing}
                 progress={processingProgress}

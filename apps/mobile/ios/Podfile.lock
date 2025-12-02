@@ -2054,7 +2054,7 @@ PODS:
     - ReactCommon/turbomodule/core
     - SocketRocket
     - Yoga
-  - react-native-sdk (11.0.0):
+  - react-native-sdk (10.0.0):
     - React
     - VeriffSDK (= 8.6.0)
   - react-native-video (6.17.0):
@@ -2133,6 +2133,34 @@ PODS:
     - React-ImageManager
     - React-jsi
     - react-native-video/Fabric
+    - React-NativeModulesApple
+    - React-RCTFabric
+    - React-renderercss
+    - React-rendererdebug
+    - React-utils
+    - ReactCodegen
+    - ReactCommon/turbomodule/bridging
+    - ReactCommon/turbomodule/core
+    - SocketRocket
+    - Yoga
+  - react-native-webview (13.16.0):
+    - boost
+    - DoubleConversion
+    - fast_float
+    - fmt
+    - glog
+    - hermes-engine
+    - RCT-Folly
+    - RCT-Folly/Fabric
+    - RCTRequired
+    - RCTTypeSafety
+    - React-Core
+    - React-debug
+    - React-Fabric
+    - React-featureflags
+    - React-graphics
+    - React-ImageManager
+    - React-jsi
     - React-NativeModulesApple
     - React-RCTFabric
     - React-renderercss
@@ -3257,6 +3285,7 @@ DEPENDENCIES:
   - react-native-safe-area-context (from `../node_modules/react-native-safe-area-context`)
   - "react-native-sdk (from `../node_modules/@veriff/react-native-sdk`)"
   - react-native-video (from `../node_modules/react-native-video`)
+  - react-native-webview (from `../node_modules/react-native-webview`)
   - React-NativeModulesApple (from `../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios`)
   - React-oscompat (from `../node_modules/react-native/ReactCommon/oscompat`)
   - React-perflogger (from `../node_modules/react-native/ReactCommon/reactperflogger`)
@@ -3428,6 +3457,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/@veriff/react-native-sdk"
   react-native-video:
     :path: "../node_modules/react-native-video"
+  react-native-webview:
+    :path: "../node_modules/react-native-webview"
   React-NativeModulesApple:
     :path: "../node_modules/react-native/ReactCommon/react/nativemodule/core/platform/ios"
   React-oscompat:
@@ -3583,8 +3614,9 @@ SPEC CHECKSUMS:
   react-native-blur: b83ffbc5380d8bd2f06804b4b0e848be3507e65c
   react-native-config: 713f8c05838addc7e947446f02f7e3cd92f85e7c
   react-native-safe-area-context: 0a3b034bb63a5b684dd2f5fffd3c90ef6ed41ee8
-  react-native-sdk: c66b01d0de28d67e462e6b99dbc57193787f97d1
+  react-native-sdk: 7db6c914fd207618ce553586ef9b91a8e302c553
   react-native-video: d9d12aa2325ae06222e97e8bd801bbc31df2675d
+  react-native-webview: cdce419e8022d0ef6f07db21890631258e7a9e6e
   React-NativeModulesApple: b2ee5b48020439fd81d1fd9cba40ebf0c3af5636
   React-oscompat: 80ca388c4831481cd03a6b45ecfc82739ca9a95e
   React-perflogger: 9725c8b401ca406f52e4bb59bf0b22ef9354f96a

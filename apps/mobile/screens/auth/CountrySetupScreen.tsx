@@ -18,9 +18,11 @@ import { cities, countries, searchCities, searchCountries, getCountryByCity } fr
 import Input from '../../components/Input';
 import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
 import { tokenStorage } from '../../api/services/tokenStorage';
+import { useQueryClient } from '@tanstack/react-query';
 
 const CountrySetupScreen = ({ navigation, route }) => {
 
+    const queryClient = useQueryClient();
     const profileData = route?.params?.profileData || {};
 
     const [city, setCity] = useState('');
@@ -99,7 +101,7 @@ const CountrySetupScreen = ({ navigation, route }) => {
     const completeStageTwo = useCompleteStageTwo({
         onSuccess: (response) => {
             console.log('Stage Two success:', response);
-            navigation.navigate('VerifyIdentity'); // or next screen
+            // navigation.navigate('VerifyIdentity'); now is handled by AuthNavigator
         },
         onError: (error) => {
             console.error('Stage Two error:', error);
@@ -109,7 +111,10 @@ const CountrySetupScreen = ({ navigation, route }) => {
 
 
     const handleNext = async () => {
+
         const storedToken = await tokenStorage.getToken();
+        console.log('storedToken', storedToken)
+
         if (selectedCity && selectedCountry) {
             const completeUserData = {
                 first_name: profileData.firstName,
@@ -118,27 +123,20 @@ const CountrySetupScreen = ({ navigation, route }) => {
                 gender: mapGenderForAPI(profileData.selectedGender),
                 city: selectedCity.name,
                 country: selectedCountry.name,
-                token: storedToken //
+                token: storedToken
             };
             try {
                 await completeStageTwo.mutateAsync(completeUserData);
+
+                //Invalidate the onboarding status query to trigger a refetch
+                queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+
             } catch (error) {
                 console.error('API call failed:', error);
             }
         }
     };
 
-    // const handleNext = async () => {
-    //     if (selectedCity && selectedCountry) {
-    //         // Demo: Just navigate to next screen without API call
-    //         console.log('Demo: Navigating to next screen with:', {
-    //             city: selectedCity.name,
-    //             country: selectedCountry.name
-    //         });
-
-    //         navigation.navigate('VerifyIdentity'); // or whatever your next screen is
-    //     }
-    // };
 
     const formatDateToYYYYMMDD = (ddmmyyyy: string) => {
         if (!ddmmyyyy) return '';
@@ -351,7 +349,7 @@ const CountrySetupScreen = ({ navigation, route }) => {
                             {/* Add extra space to prevent button overlap with dropdown */}
                             <View className="h-12" />
                         </View>
-                        </View>
+                    </View>
                     {/* </ScrollView> */}
 
                     <Button

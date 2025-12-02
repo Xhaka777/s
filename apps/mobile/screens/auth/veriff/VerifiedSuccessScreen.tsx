@@ -19,12 +19,26 @@ import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useQueryClient } from "@tanstack/react-query";
 
 const VerifiedSuccess = ({ navigation, route }) => {
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        //Invalidate the onboarding status query since verification is complete
+        queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+        console.log('Verification successful, onboarding status query invalidated///');
+    }, [queryClient]);
+
 
     const handleBack = () => {
         navigation.goBack();
     }
+
+    const handleContinue = () => {
+        console.log('Continue pressed, AuthNavigator will handle navigation')
+    }
+
     return (
         <View className="flex-1 bg-black">
             <StatusBar barStyle="light-content" backgroundColor='#000000' />
@@ -101,7 +115,7 @@ const VerifiedSuccess = ({ navigation, route }) => {
                 </ScrollView>
                 <Button
                     title='Continue'
-                    onPress={() => navigation.navigate('VerificationFailed')}
+                    onPress={handleContinue}
                     variant='primary'
                     style={{ marginHorizontal: 20 }}
                 />

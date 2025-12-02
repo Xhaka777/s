@@ -62,12 +62,13 @@ export const OnboardingStageTwoResponseSchema = z.object({
 });
 
 export const OnboardingStageThreeRequestSchema = z.object({
-    user_id: z.string().uuid('User ID must be a valid UUID'),
+    // user_id: z.string().uuid('User ID must be a valid UUID'),
 });
 
 export const OnboardingStageThreeResponseSchema = z.object({
     success: z.boolean(),
     session_id: z.string(), // For Veriff SDK
+    verification_url: z.string(),
     message: z.string(),
 });
 

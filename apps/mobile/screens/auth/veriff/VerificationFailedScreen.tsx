@@ -19,25 +19,27 @@ import { useLanguage } from "../../../contexts/LanguageContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
+import { useQueryClient } from "@tanstack/react-query";
 
 const VerificationFailed = ({ navigation, route }) => {
 
     const [isLoading, setIsLoading] = useState(false);
+    const queryClient = useQueryClient();
 
     const handleBack = () => {
         navigation.goBack();
     }
 
-
-
     const handleTryAgain = () => {
         setIsLoading(true);
-        // Add your retry logic here
-        // For example, after API call completes:
-        // setIsLoading(false);
+
         setTimeout(() => {
             setIsLoading(false);
-            navigation.navigate('WelcomeQuestionnaire');
+
+            queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+
+            console.log('Try again completed, AuthNavigator will handle navigation');
+            // navigation.navigate('WelcomeQuestionnaire');
         }, 3000);
     };
 

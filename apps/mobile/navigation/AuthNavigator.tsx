@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import WelcomeScreen from '../screens/auth/WelcomeScreen';
 import SignInScreen from '../screens/auth/SignInScreen';
@@ -13,6 +13,8 @@ import VerifiedSuccess from '../screens/auth/veriff/VerifiedSuccessScreen';
 import VerificationFailed from '../screens/auth/veriff/VerificationFailedScreen';
 import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionnaire';
 import EarlyInfluences from '../screens/auth/psychological/EarlyInfluences';
+import { useOnboardingStatus } from '../api/hooks/useOnboardingStatus';
+import { useNavigation } from '@react-navigation/native';
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -20,9 +22,10 @@ export type AuthStackParamList = {
   SignUp: undefined;
   ForgotPassword: undefined;
   TermsAndConditions: undefined;
+  //User information required
   ProfileSetup: undefined;
   CountrySetup: undefined;
-  //
+  //Veriff verification required
   VerifyIdentity: undefined;
   ChooseVerify: undefined;
   IDScan: undefined;
@@ -50,7 +53,54 @@ export type AuthStackParamList = {
 
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
+const getScreenNameForStep = (step: number): keyof AuthStackParamList | null => {
+  switch (step) {
+    case 1:
+      return 'SignUp';
+    case 2:
+      return 'ProfileSetup';
+    case 3:
+      return 'VerifyIdentity';
+    case 4:
+      return 'WelcomeQuestionnaire';
+    case 5:
+      return 'WelcomePsychological';
+    case 6:
+      return 'EmailVerification';
+    case 0:
+      return null;
+    default:
+      return 'Welcome';
+  }
+}
+
 export default function AuthNavigator() {
+  const navigation = useNavigation();
+  const { data: onboardingStatus, isLoading } = useOnboardingStatus();
+
+  useEffect(() => {
+    if (!isLoading && onboardingStatus) {
+      if (onboardingStatus.onbordingCompleted) {
+        // Navigate to main app
+        // This should be handled by RootNavigator
+        return;
+      }
+
+      if (onboardingStatus.onboarding) {
+        const currentStep = Math.floor(onboardingStatus.onboarding.status);
+        const targetScreen = getScreenNameForStep(currentStep);
+
+        if (targetScreen) {
+          //Use a timeout to ensure navigation is ready
+          setTimeout(() => {
+            navigation.navigate(targetScreen as never);
+          }, 100);
+        }
+      }
+
+    }
+  }, [onboardingStatus, isLoading, navigation]);
+
   return (
     <Stack.Navigator
       screenOptions={{

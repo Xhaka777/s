@@ -22,18 +22,25 @@ import { ArrowLeft, CheckSquare, Shield } from "lucide-react-native";
 import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { useCompleteStageThree } from "../../../api/hooks/useOnboarding";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { tokenStorage } from "../../../api/services/tokenStorage";
+import { useQueryClient } from "@tanstack/react-query";
 
 const VerifyIndentity = ({ navigation, route }) => {
     const [isReady, setIsReady] = useState(false);
     const [loading, setLoading] = useState(false);
+    const queryClient = useQueryClient();
 
     const completeStageThree = useCompleteStageThree({
         onSuccess: (response) => {
             console.log('Identity verification initiated:', response);
             console.log('Veriff session ID:', response.session_id);
+
+            queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+
             // Navigate to next screen with session_id
             navigation.navigate('ChooseVerify', {
-                veriffSessionId: response.session_id
+                veriffSessionId: response.session_id,
+                veriffUrl: response.verification_url,
             });
         },
         onError: (error) => {
@@ -47,42 +54,47 @@ const VerifyIndentity = ({ navigation, route }) => {
         navigation.goBack();
     };
 
-    // const handleNext = async () => {
-    //     setLoading(true);
-        
-    //     try {
-    //         // Get user ID from AsyncStorage (stored during registration)
-    //         const userId = await AsyncStorage.getItem('@spooned_user_id');
-            
-    //         if (userId) {
-    //             // This will trigger the onSuccess callback above
-    //             await completeStageThree.mutateAsync({ 
-    //                 user_id: userId 
-    //             });
-    //         } else {
-    //             Alert.alert('Error', 'User not found. Please sign in again.');
-    //             setLoading(false);
-    //         }
-    //     } catch (error) {
-    //         console.error('Failed to start verification:', error);
-    //         setLoading(false);
-    //     }
-    // };
-
     const handleNext = async () => {
         setLoading(true);
-        
-        // Demo: Simulate a small delay then navigate
-        setTimeout(() => {
-            setLoading(false);
-            console.log('Demo: Navigating to verification screen');
-            
-            // Navigate to next screen with a demo session ID
-            navigation.navigate('ChooseVerify', {
-                veriffSessionId: 'demo-session-123'
+        console.log('object')
+        try {
+            // Get user ID from AsyncStorage (stored during registration)
+            const userId = await AsyncStorage.getItem('@spooned_user_id');
+            // const storedToken = await tokenStorage.getToken();
+            console.log('userId', userId)
+
+
+            await completeStageThree.mutateAsync({
+                // user_id: userId  
             });
-        }, 1000); // 1 second delay to show loading state
+
+            // if (userId) {
+            //     // This will trigger the onSuccess callback above
+            // } else {
+            //     Alert.alert('Error', 'User not found. Please sign in again.');
+            //     setLoading(false);
+            // }
+
+        } catch (error) {
+            console.error('Failed to start verification:', error);
+            setLoading(false);
+        }
     };
+
+    // const handleNext = async () => {
+    //     setLoading(true);
+
+    //     // Demo: Simulate a small delay then navigate
+    //     setTimeout(() => {
+    //         setLoading(false);
+    //         console.log('Demo: Navigating to verification screen');
+
+    //         // Navigate to next screen with a demo session ID
+    //         navigation.navigate('ChooseVerify', {
+    //             veriffSessionId: 'demo-session-123'
+    //         });
+    //     }, 1000); // 1 second delay to show loading state
+    // };
 
     return (
         <View className="flex-1 bg-black">
@@ -133,7 +145,7 @@ const VerifyIndentity = ({ navigation, route }) => {
                             <ArrowLeft size={20} color="#FFFFFF" strokeWidth={1.5} />
                         </TouchableOpacity>
                     </View>
-                    
+
                     {/* Main Content */}
                     <View className="flex-1 justify-center items-center gap-6">
                         <View className="w-full flex-col justify-start items-start gap-6">
