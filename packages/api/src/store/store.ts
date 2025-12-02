@@ -108,12 +108,16 @@ export const accountActivationApi = defaultStoreConfig.accountActivationApi;
 export const {
   useCheckSessionMutation,
   useCompleteOnboardingStageOneMutation,
+  useCompleteOnboardingStageTwoMutation,
+  useCompleteOnboardingStageThreeMutation,
   useCreateUserMutation,
   useGetUsersQuery,
   useGetUserQuery,
   useUpdateUserMutation,
   useGetUsersOnboardingStatusQuery,
   useSearchUsersQuery,
+  useHandleVeriffWebhookMutation,
+  useGetVeriffStatusQuery,
 } = usersApi;
 
 // Export events API hooks
@@ -143,6 +147,7 @@ export const {
   useGetFormQuery,
   useUpdateFormMutation,
   useDeleteFormMutation,
+  useGetQuestionsAndOptionsFromFormQuery,
 } = formsApi;
 
 // Export event-runs API hooks

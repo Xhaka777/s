@@ -109,6 +109,54 @@ export interface SearchUsersQuery {
   q: string;
 }
 
+export interface CompleteOnboardingStageTwoRequest {
+  first_name: string;
+  last_name: string;
+  dob: string;
+  gender: string;
+  city: string;
+  country: string;
+}
+
+export interface CompleteOnboardingStageTwoResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface CompleteOnboardingStageThreeRequest {
+  // No body needed - user is extracted from token
+}
+
+export interface CompleteOnboardingStageThreeResponse {
+  success: boolean;
+  session_id: string;
+  message: string;
+}
+
+export interface VeriffWebhookRequest {
+  sessionId: string;
+  status: string;
+  person?: {
+    firstName?: string;
+    lastName?: string;
+  };
+  document?: {
+    type?: string;
+    number?: string;
+  };
+}
+
+export interface VeriffWebhookResponse {
+  success: boolean;
+  message: string;
+}
+
+export interface VeriffStatusResponse {
+  success: boolean;
+  sessionId: string;
+  status: string;
+}
+
 export const injectUsersEndpoints = (
   apiSlice: ReturnType<typeof createApiSlice>
 ) => {
@@ -133,6 +181,31 @@ export const injectUsersEndpoints = (
           method: "POST",
           body,
         }),
+      }),
+
+      // POST /users/onboardingStageTwo
+      completeOnboardingStageTwo: builder.mutation<
+        CompleteOnboardingStageTwoResponse,
+        CompleteOnboardingStageTwoRequest
+      >({
+        query: (body) => ({
+          url: "/users/onboardingStageTwo",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: ["User", "Onboarding"],
+      }),
+
+      // POST /users/onboardingStageThree
+      completeOnboardingStageThree: builder.mutation<
+        CompleteOnboardingStageThreeResponse,
+        void
+      >({
+        query: () => ({
+          url: "/users/onboardingStageThree",
+          method: "POST",
+        }),
+        invalidatesTags: ["User", "Onboarding"],
       }),
 
       // POST /users/register
@@ -180,6 +253,25 @@ export const injectUsersEndpoints = (
           params: { q },
         }),
         providesTags: ["User"],
+      }),
+
+      // POST /users/veriff/webhook
+      handleVeriffWebhook: builder.mutation<
+        VeriffWebhookResponse,
+        VeriffWebhookRequest
+      >({
+        query: (body) => ({
+          url: "/users/veriff/webhook",
+          method: "POST",
+          body,
+        }),
+        invalidatesTags: ["User", "Onboarding"],
+      }),
+
+      // GET /users/veriff/status/:sessionId
+      getVeriffStatus: builder.query<VeriffStatusResponse, string>({
+        query: (sessionId) => `/users/veriff/status/${sessionId}`,
+        providesTags: ["User", "Onboarding"],
       }),
     }),
   });
