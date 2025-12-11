@@ -1,57 +1,55 @@
-import React from 'react';
-import { View, Text, StyleSheet, SafeAreaView, ScrollView } from 'react-native';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  StatusBar,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from "react-native";
+import { Button, SecUnion, ThirdUnion } from "../../components";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 
 export default function ChatScreen() {
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Chat</Text>
-        <Text style={styles.subtitle}>Connect with your matches</Text>
-        
-        <View style={styles.placeholder}>
-          <Text style={styles.placeholderText}>
-            💬 Your conversations will appear here
-          </Text>
+    <View className="flex-1 bg-black">
+      <StatusBar barStyle='light-content' backgroundColor={'#000000'} />
+      <View className="absolute inset-0 z-0">
+        {/* Background gradient */}
+        <Svg height="50%" width="100%" className="absolute top-0 left-0">
+          <Defs>
+            <RadialGradient
+              id="pinkGlow"
+              cx="0%" cy="10%" r="90%"
+              gradientUnits="userSpaceOnUse"
+            >
+              <Stop offset="0%" stopColor="#99225E" stopOpacity="0.4" />
+              <Stop offset="100%" stopColor="#000" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#pinkGlow)" />
+        </Svg>
+
+        {/* Glow background effect */}
+        <View
+          className="absolute z-[1]"
+          style={{
+            left: 6,
+            top: -104,
+            width: 524,
+            height: 237,
+            transform: [{ rotate: '20deg' }],
+          }}
+        >
+          <ThirdUnion />
         </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
+
+    </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000000',
-  },
-  content: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 60,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#8E8E93',
-    textAlign: 'center',
-    marginBottom: 40,
-  },
-  placeholder: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#1C1C1E',
-    borderRadius: 16,
-    padding: 40,
-  },
-  placeholderText: {
-    fontSize: 18,
-    color: '#8E8E93',
-    textAlign: 'center',
-  },
-});

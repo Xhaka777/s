@@ -308,8 +308,8 @@ export default function SignUpScreen() {
       console.log('================================');
 
       // Use the updated Firebase API
-      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
-
+      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);      
+      
       console.log('Firebase confirmation object:', confirmation);
       console.log('Verification ID:', confirmation.verificationId);
 

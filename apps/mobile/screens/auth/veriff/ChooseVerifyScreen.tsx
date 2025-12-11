@@ -23,16 +23,53 @@ import Svg, { Defs, RadialGradient, Rect, Stop } from "react-native-svg";
 import { useVeriffStatus } from "../../../api/hooks/useOnboarding";
 import { WebView } from 'react-native-webview';
 import { useQueryClient } from "@tanstack/react-query";
+import { tokenStorage } from "../../../api/services/tokenStorage";
 
 const ChooseVerify = ({ navigation, route }) => {
     const [selectedOption, setSelectedOption] = useState(null);
     const [veriffSessionId, setVeriffSessionId] = useState(route?.params?.veriffSessionId || null);
     const [veriffUrl, setVeriffUrl] = useState(route?.params?.veriffUrl || null);
     const [showWebView, setShowWebView] = useState(false);
+    const [dynamicVeriffUrl, setDynamicVeriffUrl] = useState(null); // Add state for dynamic URL
+    const [isLoadingToken, setIsLoadingToken] = useState(false); // Add loading state
     const queryClient = useQueryClient();
 
-    console.log('📝 Received session ID from route:', veriffSessionId);
-    console.log('📝 Received verification URL from route:', veriffUrl);
+    console.log('Received session ID from route:', veriffSessionId);
+    console.log('Received verification URL from route:', veriffUrl);
+
+    // Function to construct dynamic Veriff URL with stored token
+    const constructVeriffUrl = async () => {
+        try {
+            setIsLoadingToken(true);
+            const storedToken = await tokenStorage.getToken();
+
+            if (!storedToken) {
+                throw new Error('No authentication token found');
+            }
+
+            // Construct the URL with the dynamic token
+            const dynamicUrl = `https://alchemy.veriff.com/v/${storedToken}`;
+            setDynamicVeriffUrl(dynamicUrl);
+
+            console.log(' Constructed dynamic Veriff URL with stored token');
+            return dynamicUrl;
+        } catch (error) {
+            console.error('Failed to get stored token:', error);
+            Alert.alert(
+                'Authentication Error',
+                'Failed to retrieve authentication token. Please try logging in again.',
+                [
+                    {
+                        text: 'Go Back',
+                        onPress: () => navigation.goBack()
+                    }
+                ]
+            );
+            return null;
+        } finally {
+            setIsLoadingToken(false);
+        }
+    };
 
     const handleBack = () => {
         if (showWebView) {
@@ -58,7 +95,13 @@ const ChooseVerify = ({ navigation, route }) => {
         }
 
         try {
-            console.log('🚀 Starting verification with session:', veriffSessionId);
+            console.log('Starting verification with session:', veriffSessionId);
+
+            // Construct the dynamic URL with stored token
+            const dynamicUrl = await constructVeriffUrl();
+            if (!dynamicUrl) {
+                return; // Error already handled in constructVeriffUrl
+            }
 
             // Add a small delay to ensure everything is ready
             setTimeout(() => {
@@ -82,10 +125,10 @@ const ChooseVerify = ({ navigation, route }) => {
     };
 
     const handleWebViewNavigationStateChange = (navState) => {
-        console.log('🌐 WebView navigation:', navState.url);
+        console.log(' WebView navigation:', navState.url);
 
         if (navState.url.includes('success') || navState.url.includes('complete')) {
-            console.log('✅ Verification completed');
+            console.log('Verification completed');
             setShowWebView(false);
 
             queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
@@ -93,7 +136,7 @@ const ChooseVerify = ({ navigation, route }) => {
             navigation.navigate('VerifiedSuccess');
         }
         else if (navState.url.includes('cancel') || navState.url.includes('error')) {
-            console.log('❌ Verification canceled/error');
+            console.log(' Verification canceled/error');
             setShowWebView(false);
             Alert.alert(
                 'Verification Canceled',
@@ -102,7 +145,7 @@ const ChooseVerify = ({ navigation, route }) => {
             );
         }
         else if (navState.url.includes('expired') || navState.url.includes('old')) {
-            console.log('⏰ Session expired');
+            console.log('Session expired');
             setShowWebView(false);
             Alert.alert(
                 'Session Expired',
@@ -116,11 +159,11 @@ const ChooseVerify = ({ navigation, route }) => {
             );
         }
         // Check for immediate failures (loads but shows error page)
-        else if (navState.loading === false && navState.url.includes('magic.veriff.me')) {
+        else if (navState.loading === false && navState.url.includes('alchemy.veriff.com')) {
             // If page finished loading but we're still on the same URL after 3 seconds, it might be showing an error
             setTimeout(() => {
-                if (navState.url === `https://magic.veriff.me/v/${veriffSessionId}`) {
-                    console.log('⚠️ Veriff page loaded but may be showing error');
+                if (navState.url === dynamicVeriffUrl) {
+                    console.log(' Veriff page loaded but may be showing error');
                     Alert.alert(
                         'Verification Issue',
                         'There seems to be an issue with the verification service. This may be a backend configuration problem.',
@@ -148,7 +191,7 @@ const ChooseVerify = ({ navigation, route }) => {
     const handleWebViewMessage = (event) => {
         try {
             const data = JSON.parse(event.nativeEvent.data);
-            console.log('📱 WebView message:', data);
+            console.log(' WebView message:', data);
 
             if (data.status === 'DONE') {
                 setShowWebView(false);
@@ -165,7 +208,7 @@ const ChooseVerify = ({ navigation, route }) => {
     };
 
     // WebView Screen
-    if (showWebView && veriffSessionId) {
+    if (showWebView && veriffSessionId && dynamicVeriffUrl) {
         return (
             <View style={{ flex: 1, backgroundColor: '#000' }}>
                 <StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -180,7 +223,7 @@ const ChooseVerify = ({ navigation, route }) => {
                     </View>
 
                     <WebView
-                        source={{ uri: veriffUrl || `https://alchemy.veriff.com/v/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3NjQzNTE0NjEsInNlc3Npb25faWQiOiJiMDUxNjk3Ny01MjQ3LTQ1ODItYjQ0Ny1mMzIwMTc4MDY0NGUiLCJpaWQiOiJhM2ViOTdiNy1mZDViLTRiN2UtODAyNi1iZjI0ZGE2MzcyN2QiLCJ2aWQiOiJiZWIxM2I2ZC04ZWQzLTQ0MmUtODMzMy00NDJlZmUxZTNiNWMiLCJjaWQiOiJzYWFzLTQiLCJleHAiOjE3NjQ5NTYyNjF9.iHYhcOPXzXcI5ov9sVsY9f-WARs-COz9NCdIoto2ysw` }}
+                        source={{ uri: veriffUrl || dynamicVeriffUrl }}
                         onNavigationStateChange={handleWebViewNavigationStateChange}
                         onMessage={handleWebViewMessage}
                         style={{ flex: 1 }}
@@ -191,11 +234,11 @@ const ChooseVerify = ({ navigation, route }) => {
                         mixedContentMode="compatibility"
                         onError={(syntheticEvent) => {
                             const { nativeEvent } = syntheticEvent;
-                            console.warn('⚠️ WebView error: ', nativeEvent);
+                            console.warn('WebView error: ', nativeEvent);
                             setShowWebView(false);
                             Alert.alert(
                                 'Loading Error',
-                                'Failed to load verification page. The session might have expired.',
+                                'Failed to load verification page. The session might have expired or the token is invalid.',
                                 [
                                     {
                                         text: 'Go Back',
@@ -204,12 +247,12 @@ const ChooseVerify = ({ navigation, route }) => {
                                 ]
                             );
                         }}
-                        onLoadStart={() => console.log('🔄 WebView loading started')}
-                        onLoadEnd={() => console.log('✅ WebView loading completed')}
+                        onLoadStart={() => console.log(' WebView loading started')}
+                        onLoadEnd={() => console.log(' WebView loading completed')}
                         renderError={(errorName) => (
                             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' }}>
                                 <Text style={{ color: 'white', fontSize: 16, textAlign: 'center', marginBottom: 20 }}>
-                                    Failed to load verification page.{'\n'}The session might have expired.
+                                    Failed to load verification page.{'\n'}The session might have expired or the token is invalid.
                                 </Text>
                                 <TouchableOpacity
                                     style={{ padding: 15, backgroundColor: '#99225E', borderRadius: 8, marginBottom: 10 }}
@@ -300,16 +343,21 @@ const ChooseVerify = ({ navigation, route }) => {
                                 {veriffSessionId ? (
                                     <View className="w-full p-4 bg-green-900/20 rounded-lg border border-green-600">
                                         <Text className="text-green-400 text-center font-PoppinsMedium">
-                                            ✅ Ready to verify
+                                            Ready to verify
                                         </Text>
                                         <Text className="text-gray-400 text-center text-sm mt-1">
                                             Session: {veriffSessionId.slice(0, 8)}...
                                         </Text>
+                                        {isLoadingToken && (
+                                            <Text className="text-yellow-400 text-center text-sm mt-1">
+                                                Loading authentication token...
+                                            </Text>
+                                        )}
                                     </View>
                                 ) : (
                                     <View className="w-full p-4 bg-red-900/20 rounded-lg border border-red-600">
                                         <Text className="text-red-400 text-center font-PoppinsMedium">
-                                            ❌ No verification session
+                                            No verification session
                                         </Text>
                                         <Text className="text-gray-400 text-center text-sm mt-1">
                                             Please go back and try again
@@ -325,7 +373,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                             }`}
                                         onPress={handleIDPhoto}
                                         activeOpacity={0.7}
-                                        disabled={!veriffSessionId}
+                                        disabled={!veriffSessionId || isLoadingToken}
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image
@@ -350,7 +398,7 @@ const ChooseVerify = ({ navigation, route }) => {
                                             }`}
                                         onPress={handleSelfie}
                                         activeOpacity={0.7}
-                                        disabled={!veriffSessionId}
+                                        disabled={!veriffSessionId || isLoadingToken}
                                     >
                                         <View className="w-10 h-10 relative overflow-hidden justify-center items-center">
                                             <Image

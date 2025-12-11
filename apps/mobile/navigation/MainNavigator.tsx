@@ -1,12 +1,25 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { StyleSheet, Platform, Image } from 'react-native';
 import { Home, Calendar, MessageCircle, User } from 'lucide-react-native';
 import HomeScreen from '../screens/main/HomeScreen';
-import EventsScreen from '../screens/main/EventsScreen';
+import EventsScreen from '../screens/main/event/EventsScreen';
 import ChatScreen from '../screens/main/ChatScreen';
-// import ProfileScreen from '../screens/main/profile/ProfileScreen';
+import Notifications from '../screens/main/Notifications';
 import ProfileNavigator from './ProfileNavigator';
+import Settings from '../screens/main/settings/Settings';
+import SubscriptionPlans from '../screens/main/settings/SubscriptionPlans';
+import EventDetail from '../screens/main/event/EventDetail';
+import EventGallery from '../screens/main/event/EventGallery';
+import OrganizerProfile from '../screens/main/event/OrganizerProfile';
+import BookingConfirmation from '../screens/main/event/BookingConfirmation';
+import Waitlist from '../screens/main/event/Waitlist';
+import CancelBooking from '../screens/main/event/CancelBooking';
+import CancellationSuccess from '../screens/main/event/CancellationSuccess';
+import EventCancelled from '../screens/main/event/EventCancelled';
+import SuccessfullyChecked from '../screens/main/event/SuccessfullyChecked';
+import MarkedNoShow from '../screens/main/event/MarkedNoShow';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -15,9 +28,28 @@ export type MainTabParamList = {
   Profile: undefined;
 };
 
-const Tab = createBottomTabNavigator<MainTabParamList>();
+export type MainStackParamList = {
+  MainTabs: undefined;
+  Notifications: undefined;
+  //
+  Settings: undefined;
+  SubscriptionPlans: undefined;
+  EventDetail: { eventId: string };
+  EventGallery: { images: string[]; initialIndex?: number; eventTitle?: string };
+  OrganizerProfile: { organizerId: string };
+  BookingConfirmation: { eventId: string; bookingId: string };
+  Waitlist: { eventId: string; waitlistId: string };
+  CancelBooking: undefined;
+  CancellationSuccess: undefined;
+  EventCancelled: undefined;
+  SuccessfullyChecked: undefined;
+  MarkedNoShow: undefined;
+};
 
-export default function MainNavigator() {
+const Tab = createBottomTabNavigator<MainTabParamList>();
+const Stack = createStackNavigator<MainStackParamList>();
+
+function MainTabNavigator() {
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -97,6 +129,138 @@ export default function MainNavigator() {
         }}
       />
     </Tab.Navigator>
+  );
+}
+
+export default function MainNavigator() {
+  return (
+    <Stack.Navigator
+      screenOptions={{
+        headerShown: false,
+        presentation: 'card',
+      }}
+    >
+      <Stack.Screen
+        name="MainTabs"
+        component={MainTabNavigator}
+      />
+      <Stack.Screen
+        name='EventDetail'
+        component={EventDetail}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name='EventGallery'
+        component={EventGallery}
+        options={{
+          headerShown: false,
+          // presentation: 'modal'
+        }}
+      />
+      <Stack.Screen
+        name='OrganizerProfile'
+        component={OrganizerProfile}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name='BookingConfirmation'
+        component={BookingConfirmation}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name='Waitlist'
+        component={Waitlist}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name='CancelBooking'
+        component={CancelBooking}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name='CancellationSuccess'
+        component={CancellationSuccess}
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="EventCancelled"
+        component={EventCancelled}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name='SuccessfullyChecked'
+        component={SuccessfullyChecked}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name='MarkedNoShow'
+        component={MarkedNoShow}
+        options={{
+          headerShown: false
+        }}
+      />
+      <Stack.Screen
+        name="Notifications"
+        component={Notifications}
+        options={{
+          headerShown: false,
+          headerTitle: 'Notifications',
+          headerStyle: {
+            backgroundColor: '#000000',
+          },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={Settings}
+        options={{
+          headerShown: false,
+          headerTitle: 'Settings',
+          headerStyle: {
+            backgroundColor: '#000000',
+          },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+      <Stack.Screen
+        name="SubscriptionPlans"
+        component={SubscriptionPlans}
+        options={{
+          headerShown: false,
+          headerTitle: 'Subscription Plans',
+          headerStyle: {
+            backgroundColor: '#000000',
+          },
+          headerTintColor: '#FFFFFF',
+          headerTitleStyle: {
+            fontWeight: 'bold',
+          },
+        }}
+      />
+    </Stack.Navigator>
   );
 }
 

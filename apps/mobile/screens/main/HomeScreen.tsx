@@ -19,8 +19,14 @@ import NoUpcomingEvents from "../../components/NoUpcomingEvents";
 import UpcomingEventsList from "../../components/UpcomingEventsList";
 import { Event } from "../../components/UpcomingEventCard";
 import StatsCard from "../../components/StatsCard";
+import MembershipCard from "../../components/Membershipcard";
+import { useNavigation } from "@react-navigation/native";
 
 export default function HomeScreen() {
+  const navigation = useNavigation();
+  //
+  const [hasSubscription, setHasSubscription] = useState<boolean>(false);
+
   // Dummy data for upcoming events
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([
     {
@@ -29,7 +35,7 @@ export default function HomeScreen() {
       location: 'Zurich',
       date: 'Dec 1',
       time: '19:00',
-      image: require('../../assets/icons/wine-dine-event.png'), 
+      image: require('../../assets/icons/wine-dine-event.png'),
     },
     {
       id: '2',
@@ -58,6 +64,21 @@ export default function HomeScreen() {
   const handleViewAvailableEvents = () => {
     console.log('View available events pressed');
     // Navigate to browse events screen
+  };
+
+  const handleViewPlans = () => {
+    console.log('View plans pressed');
+    navigation.navigate('SubscriptionPlans' as never);
+
+    // Navigate to subscription plans screen
+  };
+
+  const handleNotificationPress = () => {
+    navigation.navigate('Notifications' as never);
+  };
+
+  const handleFilterPress = () => {
+    navigation.navigate('Settings' as never);
   };
 
   return (
@@ -109,14 +130,14 @@ export default function HomeScreen() {
             />
 
             <View className="flex-row items-center gap-4">
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleNotificationPress}>
                 <Image
                   source={require('../../assets/icons/notification.png')}
                   className="w-[38px] h-[38px]"
                   resizeMode="contain"
                 />
               </TouchableOpacity>
-              <TouchableOpacity>
+              <TouchableOpacity onPress={handleFilterPress}>
                 <Image
                   source={require('../../assets/icons/filter.png')}
                   className="w-[38px] h-[38px]"
@@ -132,55 +153,11 @@ export default function HomeScreen() {
             <Text className="text-gray-400 text-lg">Discover exciting events nearby</Text>
           </View>
 
-          {/* Premium Membership Card */}
-          <View className="px-4 pt-5 pb-2 mb-6 rounded-2xl border-[0.8px] shadow-2xl"
-            style={{
-              backgroundColor: 'rgba(157, 23, 77, 0.2)',
-              borderColor: 'rgba(157, 23, 77, 0.4)',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 8 },
-              shadowOpacity: 0.25,
-              shadowRadius: 25,
-              elevation: 25,
-            }}
-          >
-            <View className="flex-row justify-between items-center mb-4">
-              <View className="flex-row items-center gap-3 flex-1">
-                <View className="w-12 h-12 bg-[#99225E] rounded-full justify-center items-center">
-                  <Image
-                    source={require('../../assets/icons/crown.png')}
-                    className="w-6 h-6"
-                    resizeMode="contain"
-                  />
-                </View>
-                <View className="flex-1">
-                  <Text className="text-white text-base font-semibold mb-1">
-                    Premium Membership
-                  </Text>
-                  <Text className="text-white/60 text-xs">
-                    Active until Dec 31, 2026
-                  </Text>
-                </View>
-              </View>
-              <View className="w-6 h-6 ml-3 mb-5">
-                <Image
-                  source={require('../../assets/icons/green_checked.png')}
-                  className="w-6 h-6"
-                  resizeMode="contain"
-                />
-              </View>
-            </View>
-            <View className="border-t-[0.8px] border-white/10 pt-3 flex-row items-center gap-2">
-              <Image
-                source={require('../../assets/icons/star.png')}
-                className="w-4 h-4"
-                resizeMode="contain"
-              />
-              <Text className="text-white/80 text-sm font-medium">
-                Unlimited access to exclusive events
-              </Text>
-            </View>
-          </View>
+          <MembershipCard
+            hasSubscription={hasSubscription}
+            subscriptionEndDate="DEc 31, 2026"
+            onViewPlans={handleViewPlans}
+          />
 
           {/* My Upcoming Events Section */}
           <View className="mb-6">
@@ -192,7 +169,7 @@ export default function HomeScreen() {
                 </TouchableOpacity>
               )}
             </View>
-            
+
             {/* Dynamic content based on events availability */}
             {upcomingEvents.length > 0 ? (
               <UpcomingEventsList
