@@ -1,0 +1,15 @@
+{
+    "name": "spooned-monorepo",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "mobile": "cd apps/mobile && npm start",
+        "mobile:android": "cd apps/mobile && npm run android",
+        "mobile:ios": "cd apps/mobile && npm run ios",
+        "web": "cd apps/web && npm run dev"
+    },
+    "devDependencies": {
+        "babel-plugin-module-resolver": "^5.0.2",
+        "typescript": "^5.8.3"
+    }
+}

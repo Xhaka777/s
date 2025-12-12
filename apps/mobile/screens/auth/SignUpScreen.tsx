@@ -24,12 +24,15 @@ import GlowBackground from '../../components/svg/GlowBackground';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { Input, SecUnion, SuccessModal, ThirdUnion } from '../../components';
-import { useCompleteStageOne } from '../../api/hooks/useOnboarding';
+// import { useCompleteStageOne } from '../../api/hooks/useOnboarding';
 import { tokenStorage } from '../../api/services/tokenStorage';
 import { LogBox } from 'react-native';
 import messaging from '@react-native-firebase/messaging';
 import { useQueryClient } from '@tanstack/react-query';
 
+//RTK
+import { useCompleteOnboardingStageOneMutation } from '../../store';
+import { useDispatch } from 'react-redux';
 
 
 LogBox.ignoreLogs([
@@ -138,6 +141,8 @@ const detectPriorityCountryCode = (phoneNumber: string): { countryCode: string; 
 export default function SignUpScreen() {
   const navigation = useNavigation<SignUpScreenNavigationProp>();
   const queryClient = useQueryClient();
+  //
+  const dispatch = useDispatch();
 
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -159,25 +164,28 @@ export default function SignUpScreen() {
   const [currentOtpIndex, setCurrentOtpIndex] = useState(0);
   const otpRefs = useRef<(TextInput | null)[]>([]);
 
-  // Add this after your existing useState declarations
-  const completeStageOne = useCompleteStageOne({
-    onSuccess: async (response) => {
-      console.log('Onboarding success:', response);
-      if (response.success && response.token) {
-        // Save token securely
-        await tokenStorage.saveToken(response.token);
-        console.log('reponse.token', response.token)
+  //useCompleteStageOne RTK Query mutation
+  const [completeStageOne, { isLoading: isCompletingStageOne }] = useCompleteOnboardingStageOneMutation();
 
-        //Invalidate the onboarding status query to trigger a refetch
-        queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
-        //
-        setShowSuccessModal(true);
-      }
-    },
-    onError: (error) => {
-      console.error('Onboarding error:', error);
-    },
-  });
+  // Add this after your existing useState declarations
+  // const completeStageOne = useCompleteStageOne({
+  //   onSuccess: async (response) => {
+  //     console.log('Onboarding success:', response);
+  //     if (response.success && response.token) {
+  //       // Save token securely
+  //       await tokenStorage.saveToken(response.token);
+  //       console.log('reponse.token', response.token)
+
+  //       //Invalidate the onboarding status query to trigger a refetch
+  //       queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
+  //       //
+  //       setShowSuccessModal(true);
+  //     }
+  //   },
+  //   onError: (error) => {
+  //     console.error('Onboarding error:', error);
+  //   },
+  // });
 
   // Debug Firebase setup on component mount
   useEffect(() => {
@@ -200,26 +208,30 @@ export default function SignUpScreen() {
         try {
           setApiCallMade(true);
           const idToken = await user.getIdToken();
-
-          // Your existing code...
           const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
 
-          // await completeStageOne.mutateAsync({
-          //   email: email,
-          //   phone_e164: verifiedPhone,
-          //   preferred_language: 'en',
-          //   firebase_id_token: idToken,
-          // });
+          // ✅ Use RTK Query mutation
+          const result = await completeStageOne({
+            email: email,
+            phone_e164: verifiedPhone,
+            preferred_language: 'en',
+            firebase_id_token: idToken,
+          }).unwrap();
 
+          console.log('Onboarding success:', result);
+
+          if (result.session_token) {
+            await tokenStorage.saveToken(result.session_token);
+            setShowSuccessModal(true);
+          }
         } catch (error) {
-          console.error('Error getting ID token:', error);
+          console.error('Error during onboarding:', error);
+          setError('Failed to complete registration. Please try again.');
         }
-      } else {
-        console.log('No user signed in');
       }
     });
     return subscriber;
-  }, [email, phoneNumber, countryCode, step, apiCallMade]);
+  }, [email, phoneNumber, countryCode, step, apiCallMade, completeStageOne]);
 
   const formatPhoneNumber = (countryCode: string, phoneNumber: string) => {
     const cleanPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
@@ -308,8 +320,8 @@ export default function SignUpScreen() {
       console.log('================================');
 
       // Use the updated Firebase API
-      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);      
-      
+      const confirmation = await auth().signInWithPhoneNumber(fullPhoneNumber);
+
       console.log('Firebase confirmation object:', confirmation);
       console.log('Verification ID:', confirmation.verificationId);
 
@@ -434,14 +446,25 @@ export default function SignUpScreen() {
       const idToken = await user?.getIdToken();
 
 
-      await completeStageOne.mutateAsync({
+      // await completeStageOne.mutateAsync({
+      //   email: email,
+      //   phone_e164: verifiedPhone,
+      //   preferred_language: 'en',
+      //   firebase_id_token: idToken,
+      // });
+
+      const result = await completeStageOne({
         email: email,
         phone_e164: verifiedPhone,
         preferred_language: 'en',
         firebase_id_token: idToken,
-      });
+      }).unwrap();
 
-      setShowSuccessModal(true);
+      if (result.session_token) {
+        await tokenStorage.saveToken(result.session_token);
+        setShowSuccessModal(true);
+      }
+
     } catch (error: any) {
       let errorMessage = 'Invalid verification code. Please try again.';
 
