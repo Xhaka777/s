@@ -2,23 +2,28 @@
   "name": "@braynex/api",
   "version": "1.0.0",
   "private": true,
-  "main": "src/index.ts",
-  "types": "src/index.ts",
+
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+
   "scripts": {
-    "lint": "eslint ."
+    "build": "tsc -p tsconfig.json"
   },
-  "dependencies": {
-    "@reduxjs/toolkit": "^2.10.1",
-    "react-redux": "^9.2.0",
-    "redux": "^5.0.1",
-    "redux-persist": "^6.0.0"
-  },
+
   "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0"
+    "react": "*",
+    "react-native": "*",
+    "@reduxjs/toolkit": "*",
+    "react-redux": "*",
+    "redux": "*",
+    "redux-persist": "*"
   },
+
+  "dependencies": {
+
+  },
+
   "devDependencies": {
-    "@types/react": "^19.1.1",
     "typescript": "^5.8.3"
   }
 }
-
