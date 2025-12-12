@@ -165,7 +165,7 @@ export const injectUsersEndpoints = (
       // POST /users/check-session
       checkSession: builder.mutation<CheckSessionResponse, CheckSessionRequest>({
         query: (body) => ({
-          url: "/users/check-session",
+          url: "api/users/check-session",
           method: "POST",
           body,
         }),
@@ -177,7 +177,7 @@ export const injectUsersEndpoints = (
         CompleteOnboardingStageOneRequest
       >({
         query: (body) => ({
-          url: "/users/onboardingStageOne",
+          url: "api/users/onboardingStageOne",
           method: "POST",
           body,
         }),
@@ -189,7 +189,7 @@ export const injectUsersEndpoints = (
         CompleteOnboardingStageTwoRequest
       >({
         query: (body) => ({
-          url: "/users/onboardingStageTwo",
+          url: "api/users/onboardingStageTwo",
           method: "POST",
           body,
         }),
@@ -202,7 +202,7 @@ export const injectUsersEndpoints = (
         void
       >({
         query: () => ({
-          url: "/users/onboardingStageThree",
+          url: "api/users/onboardingStageThree",
           method: "POST",
         }),
         invalidatesTags: ["User", "Onboarding"],
@@ -211,7 +211,7 @@ export const injectUsersEndpoints = (
       // POST /users/register
       createUser: builder.mutation<CreateUserResponse, CreateUserRequest>({
         query: (body) => ({
-          url: "/users/register",
+          url: "api/users/register",
           method: "POST",
           body,
         }),
@@ -220,20 +220,20 @@ export const injectUsersEndpoints = (
 
       // GET /users/
       getUsers: builder.query<User[], void>({
-        query: () => "/users/",
+        query: () => "api/users/",
         providesTags: ["User"],
       }),
 
       // GET /users/:id
       getUser: builder.query<User, string>({
-        query: (id) => `/users/${id}`,
+        query: (id) => `api/users/${id}`,
         providesTags: (result, error, id) => [{ type: "User", id }],
       }),
 
       // PUT /users/:id
       updateUser: builder.mutation<User, { id: string; data: UpdateUserRequest }>({
         query: ({ id, data }) => ({
-          url: `/users/${id}`,
+          url: `api/users/${id}`,
           method: "PUT",
           body: data,
         }),
@@ -242,14 +242,14 @@ export const injectUsersEndpoints = (
 
       // GET /users/:id/onboarding-status
       getUsersOnboardingStatus: builder.query<OnboardingStatusResponse, string>({
-        query: (id) => `/users/${id}/onboarding-status`,
+        query: (id) => `api/users/${id}/onboarding-status`,
         providesTags: (result, error, id) => [{ type: "User", id }, "Onboarding"],
       }),
 
       // GET /users/search?q=...
       searchUsers: builder.query<User[], SearchUsersQuery>({
         query: ({ q }) => ({
-          url: "/users/search",
+          url: "api/users/search",
           params: { q },
         }),
         providesTags: ["User"],
@@ -261,7 +261,7 @@ export const injectUsersEndpoints = (
         VeriffWebhookRequest
       >({
         query: (body) => ({
-          url: "/users/veriff/webhook",
+          url: "api/users/veriff/webhook",
           method: "POST",
           body,
         }),
@@ -270,7 +270,7 @@ export const injectUsersEndpoints = (
 
       // GET /users/veriff/status/:sessionId
       getVeriffStatus: builder.query<VeriffStatusResponse, string>({
-        query: (sessionId) => `/users/veriff/status/${sessionId}`,
+        query: (sessionId) => `api/users/veriff/status/${sessionId}`,
         providesTags: ["User", "Onboarding"],
       }),
     }),
