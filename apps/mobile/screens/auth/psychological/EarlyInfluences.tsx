@@ -101,7 +101,10 @@ const EarlyInfluences = ({ navigation, route }) => {
         navigation.navigate('TrapsPreparation', {
             nextScreen: 'RelationshipExperience'
         });
-    };
+    };    
+    // const handleNext = () => {
+    //     navigation.navigate('HeyGenAPIKeyTester');
+    // };
 
     const handleGoBack = () => {
         navigation.goBack();

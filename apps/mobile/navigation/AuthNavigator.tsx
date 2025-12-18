@@ -15,6 +15,7 @@ import SpoonedQuestionnaire from '../screens/auth/questionnaire/SpoonedQuestionn
 import EarlyInfluences from '../screens/auth/psychological/EarlyInfluences';
 import { useOnboardingStatus } from '../api/hooks/useOnboardingStatus';
 import { useNavigation } from '@react-navigation/native';
+import {HeyGenAPIKeyTester} from '../screens/auth'; 
 
 export type AuthStackParamList = {
   Welcome: undefined;
@@ -46,6 +47,7 @@ export type AuthStackParamList = {
   Conclusion: undefined;
   Booklet: undefined;
   PsychologicalChat: undefined;
+  HeyGenAPIKeyTester: undefined;
   //
   EmailVerification: undefined;
   UploadPhoto: undefined;
@@ -136,6 +138,8 @@ export default function AuthNavigator() {
       <Stack.Screen name="Conclusion" component={Conclusion} />
       <Stack.Screen name="Booklet" component={Booklet} />
       <Stack.Screen name="PsychologicalChat" component={PsychologicalChat} />
+      <Stack.Screen name='HeyGenAPIKeyTester' component={HeyGenAPIKeyTester} />
+
       <Stack.Screen name="EmailVerification" component={EmailVerification} />
       <Stack.Screen name="UploadPhoto" component={UploadPhoto} />
     </Stack.Navigator>

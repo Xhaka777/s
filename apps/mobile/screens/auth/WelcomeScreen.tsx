@@ -353,8 +353,8 @@ export default function WelcomeScreen() {
             {/* Create Account Button */}
             <Button
               title={t('welcome.createAccount')}
-              onPress={() => navigation.navigate('SignUp')}
-              // onPress={() => navigation.navigate('UploadPhoto')}
+              // onPress={() => navigation.navigate('SignUp')}
+              onPress={() => navigation.navigate('WelcomePsychological')}
               variant="secondary"
               style={{
                 shadowColor: '#000',

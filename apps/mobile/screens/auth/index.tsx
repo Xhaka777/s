@@ -28,7 +28,7 @@ export { default as TrapAnswers } from './psychological/TrapAnswers';
 export { default as Conclusion } from './psychological/Conclusion';
 export { default as Booklet } from './psychological/Blooklet';
 export { default as PsychologicalChat } from './psychological/PsychologicalChat';
-
+export { default as HeyGenAPIKeyTester } from './psychological/HeyGenAPIKeyTester'
 //
 export { default as EmailVerification } from './EmailVerification';
 export { default as UploadPhoto } from './UploadPhoto';

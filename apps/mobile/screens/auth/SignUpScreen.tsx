@@ -33,6 +33,7 @@ import { useQueryClient } from '@tanstack/react-query';
 //RTK
 import { useCompleteOnboardingStageOneMutation } from '../../store';
 import { useDispatch } from 'react-redux';
+import { setToken } from '../../../../packages/api/src/store/slice/auth/auth.slice';
 
 
 LogBox.ignoreLogs([
@@ -202,36 +203,36 @@ export default function SignUpScreen() {
 
 
   // Listen for authentication state changes
-  useEffect(() => {
-    const subscriber = auth().onAuthStateChanged(async (user) => {
-      if (user && step === 'verification' && !apiCallMade) {
-        try {
-          setApiCallMade(true);
-          const idToken = await user.getIdToken();
-          const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
+  // useEffect(() => {
+  //   const subscriber = auth().onAuthStateChanged(async (user) => {
+  //     if (user && step === 'verification' && !apiCallMade) {
+  //       try {
+  //         setApiCallMade(true);
+  //         const idToken = await user.getIdToken();
+  //         const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
 
-          // ✅ Use RTK Query mutation
-          const result = await completeStageOne({
-            email: email,
-            phone_e164: verifiedPhone,
-            preferred_language: 'en',
-            firebase_id_token: idToken,
-          }).unwrap();
+  //         // ✅ Use RTK Query mutation
+  //         const result = await completeStageOne({
+  //           email: email,
+  //           phone_e164: verifiedPhone,
+  //           preferred_language: 'en',
+  //           firebase_id_token: idToken,
+  //         }).unwrap();
 
-          console.log('Onboarding success:', result);
+  //         console.log('Onboarding success:', result);
 
-          if (result.session_token) {
-            await tokenStorage.saveToken(result.session_token);
-            setShowSuccessModal(true);
-          }
-        } catch (error) {
-          console.error('Error during onboarding:', error);
-          setError('Failed to complete registration. Please try again.');
-        }
-      }
-    });
-    return subscriber;
-  }, [email, phoneNumber, countryCode, step, apiCallMade, completeStageOne]);
+  //         if (result.session_token) {
+  //           await tokenStorage.saveToken(result.session_token);
+  //           setShowSuccessModal(true);
+  //         }
+  //       } catch (error) {
+  //         console.error('Error during onboarding:', error);
+  //         setError('Failed to complete registration. Please try again.');
+  //       }
+  //     }
+  //   });
+  //   return subscriber;
+  // }, [email, phoneNumber, countryCode, step, apiCallMade, completeStageOne]);
 
   const formatPhoneNumber = (countryCode: string, phoneNumber: string) => {
     const cleanPhoneNumber = phoneNumber.replace(/[\s\-\(\)]/g, '');
@@ -329,6 +330,7 @@ export default function SignUpScreen() {
       setStep('verification');
       setOtpValues(['', '', '', '', '', '']);
       setCurrentOtpIndex(0);
+      setLoading(false); // ✅ Add this line to reset loading state
 
     } catch (error: any) {
       console.error('=== FIREBASE ERROR ===');
@@ -363,9 +365,9 @@ export default function SignUpScreen() {
       }
 
       setError(errorMessage);
-    } finally {
-      setLoading(false);
+      setLoading(false); // This was already there, which is good
     }
+    // Remove the finally block since we're handling setLoading(false) explicitly in both try and catch
   };
 
   // OTP Input handlers
@@ -438,34 +440,35 @@ export default function SignUpScreen() {
       setError('');
 
       const credential = await confirm.confirm(codeToVerify);
-
       const user = credential?.user;
 
-      // The onAuthStateChanged listener will handle the rest
-      const verifiedPhone = user?.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
-      const idToken = await user?.getIdToken();
+      if (user && !apiCallMade) {
+        setApiCallMade(true);
+        const idToken = await user.getIdToken();
+        const verifiedPhone = user.phoneNumber || formatPhoneNumber(countryCode, phoneNumber);
 
+        // Call the RTK Query mutation
+        const result = await completeStageOne({
+          email: email,
+          phone_e164: verifiedPhone,
+          preferred_language: 'en',
+          firebase_id_token: idToken,
+        }).unwrap();
 
-      // await completeStageOne.mutateAsync({
-      //   email: email,
-      //   phone_e164: verifiedPhone,
-      //   preferred_language: 'en',
-      //   firebase_id_token: idToken,
-      // });
+        console.log('Onboarding success:', result);
 
-      const result = await completeStageOne({
-        email: email,
-        phone_e164: verifiedPhone,
-        preferred_language: 'en',
-        firebase_id_token: idToken,
-      }).unwrap();
-
-      if (result.session_token) {
-        await tokenStorage.saveToken(result.session_token);
-        setShowSuccessModal(true);
+        if (result.token) {
+          await tokenStorage.saveToken(result.token);
+          dispatch(setToken(result.token));
+          console.log('Token saved, showing success modal');
+          setShowSuccessModal(true);
+        }
       }
 
     } catch (error: any) {
+      console.error('Error during verification:', error);
+      setApiCallMade(false); // Reset on error
+
       let errorMessage = 'Invalid verification code. Please try again.';
 
       switch (error.code) {
@@ -490,39 +493,9 @@ export default function SignUpScreen() {
     }
   };
 
-  // const handleVerifyCode = async (code?: string) => {
-  //   const codeToVerify = code || verificationCode;
-
-  //   if (!codeToVerify || codeToVerify.length !== 6) {
-  //     setError('Please enter the complete 6-digit verification code');
-  //     return;
-  //   }
-
-  //   try {
-  //     setLoading(true);
-  //     setError('');
-
-  //     // Demo: Check if code is "222222"
-  //     if (codeToVerify === '222222') {
-  //       // Simulate API delay
-  //       setTimeout(() => {
-  //         setLoading(false);
-  //         setShowSuccessModal(true);
-  //       }, 1000);
-  //     } else {
-  //       setLoading(false);
-  //       setError('Invalid verification code. Use 222222 for demo.');
-  //     }
-
-  //   } catch (error) {
-  //     setLoading(false);
-  //     setError('Something went wrong. Please try again.');
-  //   }
-  // };
-
   const handleSuccessModalClose = () => {
     setShowSuccessModal(false);
-    // navigation.navigate('ProfileSetup'); //now is handled by AuthNavigator
+    navigation.navigate('ProfileSetup'); //now is handled by AuthNavigator
   };
 
   const handleResendCode = async () => {

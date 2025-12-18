@@ -16,7 +16,6 @@ import { ArrowLeft, Mic } from 'lucide-react-native';
 import ProcessingModal from '../../../components/ProcessingModal';
 import Config from 'react-native-config';
 
-
 // LiveKit imports for HeyGen integration
 import {
     LiveKitRoom,
@@ -33,9 +32,9 @@ registerGlobals();
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
-// HeyGen API Configuration (Official approach)
+// HeyGen API Configuration
 const API_CONFIG = {
-    apiKey: Config.HEYGEN_API_KEY,
+    apiKey: "Yzc3NGI1M2RhOGU4NDQ5ZDkyYWEwMjVmYzQ3ZjFmMDAtMTc1MDE3MTMzNg==",
     serverUrl: "https://api.heygen.com",
 };
 
@@ -98,7 +97,7 @@ const HeyGenAvatar = ({
                 alignItems: 'center'
             }}>
                 <Text style={{ color: 'white', fontSize: 18, marginBottom: 20 }}>
-                    Preparing your session...
+                    Vorbereitung Ihrer Sitzung...
                 </Text>
                 <View style={{
                     width: 50,
@@ -120,7 +119,7 @@ const HeyGenAvatar = ({
             options={{
                 adaptiveStream: { pixelDensity: "screen" },
             }}
-            audio={false}
+            audio={true}
             video={false}
         >
             <VideoTrackView
@@ -131,7 +130,7 @@ const HeyGenAvatar = ({
     );
 };
 
-// Recording Waves Component (keeping your existing implementation)
+// Recording Waves Component
 const RecordingWaves = () => {
     const wave1 = useRef(new Animated.Value(0.3)).current;
     const wave2 = useRef(new Animated.Value(0.5)).current;
@@ -250,13 +249,19 @@ const TrapsPreparation = ({ navigation, route }) => {
     const [speaking, setSpeaking] = useState(false);
     const [avatarInitializing, setAvatarInitializing] = useState(true);
     const [avatarReady, setAvatarReady] = useState(false);
+    const [sessionFullyReady, setSessionFullyReady] = useState(false); // New state for full readiness
 
     const nextScreen = route?.params?.nextScreen || 'RelationshipExperience';
     const isFinalStep = route?.params?.isFinalStep || false;
 
-    // HeyGen API functions (Official approach)
+    // Ref to track if intro has been sent
+    const introSentRef = useRef(false);
+
     const getSessionToken = async () => {
         try {
+            console.log("🔑 Getting session token from HeyGen...");
+            console.log("🔑 Using API Key:", API_CONFIG.apiKey?.substring(0, 10) + "...");
+
             const response = await fetch(
                 `${API_CONFIG.serverUrl}/v1/streaming.create_token`,
                 {
@@ -268,25 +273,46 @@ const TrapsPreparation = ({ navigation, route }) => {
                 }
             );
 
+            console.log("📡 Response status:", response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("❌ Error response:", errorText);
+                throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+            }
+
             const data = await response.json();
-            console.log("Session token obtained", data.data.token);
-            return data.data.token;
+            console.log("📦 Token response received");
+
+            if (data.error) {
+                throw new Error(`API Error: ${JSON.stringify(data.error)}`);
+            }
+
+            const token = data.data?.token;
+
+            if (!token) {
+                console.error("❌ No token found in response:", data);
+                throw new Error("No token found in response");
+            }
+
+            console.log("✅ Session token obtained successfully");
+            return token;
         } catch (error) {
-            console.error("Error getting session token:", error);
+            console.error("❌ Error getting session token:", error);
             throw error;
         }
     };
 
     const startStreamingSession = async (sessionId, sessionToken) => {
         try {
-            console.log("Starting streaming session with:", { sessionId, sessionToken });
+            console.log("🚀 Starting streaming session...");
             const startResponse = await fetch(
                 `${API_CONFIG.serverUrl}/v1/streaming.start`,
                 {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${sessionToken}`,
+                        "Authorization": `Bearer ${sessionToken}`,
                     },
                     body: JSON.stringify({
                         session_id: sessionId,
@@ -294,16 +320,21 @@ const TrapsPreparation = ({ navigation, route }) => {
                 }
             );
 
-            const startData = await startResponse.json();
-            console.log("Streaming start response:", startData);
+            if (!startResponse.ok) {
+                const errorText = await startResponse.text();
+                throw new Error(`Start session failed: ${startResponse.status} - ${errorText}`);
+            }
 
-            if (startData) {
+            const startData = await startResponse.json();
+            console.log("✅ Streaming session started:", startData);
+
+            if (startData && (startData.success !== false)) {
                 setConnected(true);
                 return true;
             }
             return false;
         } catch (error) {
-            console.error("Error starting streaming session:", error);
+            console.error("❌ Error starting streaming session:", error);
             return false;
         }
     };
@@ -312,30 +343,43 @@ const TrapsPreparation = ({ navigation, route }) => {
         try {
             setLoading(true);
             setAvatarInitializing(true);
+            setSessionFullyReady(false);
 
-            // Get new session token
+            // Step 1: Get session token
             const newSessionToken = await getSessionToken();
             setSessionToken(newSessionToken);
 
+            console.log("🎭 Creating streaming session (using default avatar voice)...");
+
+            // Step 2: Create new streaming session WITHOUT specifying voice
             const response = await fetch(`${API_CONFIG.serverUrl}/v1/streaming.new`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${newSessionToken}`,
+                    "Authorization": `Bearer ${newSessionToken}`,
                 },
                 body: JSON.stringify({
                     quality: "high",
-                    avatar_id: "705bd4081d524ad8bf40a8aa24ccf601", // Your custom avatar ID
-                    voice: {
-                        voice_id: "", // You can specify a voice here if you have one
-                    },
+                    avatar_id: "705bd4081d524ad8bf40a8aa24ccf601",
                     version: "v2",
                     video_encoding: "H264",
                 }),
             });
 
+            console.log("📡 Create session response status:", response.status);
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error("❌ Error response:", errorText);
+                throw new Error(`Create session failed: ${response.status} - ${errorText}`);
+            }
+
             const data = await response.json();
-            console.log("Streaming new response:", data.data);
+            console.log("📦 Session created successfully");
+
+            if (data.error) {
+                throw new Error(`Session creation error: ${JSON.stringify(data.error)}`);
+            }
 
             if (data.data) {
                 const newSessionId = data.data.session_id;
@@ -343,40 +387,110 @@ const TrapsPreparation = ({ navigation, route }) => {
                 setWsUrl(data.data.url);
                 setToken(data.data.access_token);
 
-                // Connect WebSocket
+                console.log("🔗 Session details:", {
+                    sessionId: newSessionId,
+                    hasWsUrl: !!data.data.url,
+                    hasAccessToken: !!data.data.access_token
+                });
+
+                // Step 3: Setup WebSocket for real-time communication with German STT
                 const params = new URLSearchParams({
                     session_id: newSessionId,
                     session_token: newSessionToken,
                     silence_response: "false",
-                    stt_language: "en",
+                    stt_language: "de", // German Speech-to-Text
                 });
 
-                const wsUrl = `wss://${new URL(API_CONFIG.serverUrl).hostname
-                    }/v1/ws/streaming.chat?${params}`;
+                const wsUrl = `wss://${new URL(API_CONFIG.serverUrl).hostname}/v1/ws/streaming.chat?${params}`;
+                console.log("🔌 Connecting WebSocket...");
 
                 const ws = new WebSocket(wsUrl);
+
+                ws.onopen = () => {
+                    console.log("✅ WebSocket connected");
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        console.log("📨 WebSocket message:", message);
+
+                        // Handle different message types
+                        if (message.type === 'avatar_start_talking') {
+                            setSpeaking(true);
+                            console.log("🗣️ Avatar started talking");
+                        } else if (message.type === 'avatar_stop_talking') {
+                            setSpeaking(false);
+                            console.log("🤐 Avatar stopped talking");
+                        } else if (message.type === 'user_message') {
+                            console.log("🎤 User said (German):", message.text);
+                            // Here you could send the user's German speech to process
+                        } else if (message.type === 'user_start_talking') {
+                            console.log("🎤 User started talking");
+                        } else if (message.type === 'user_stop_talking') {
+                            console.log("🎤 User stopped talking");
+                        }
+                    } catch (error) {
+                        console.error("❌ Error parsing WebSocket message:", error);
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error("❌ WebSocket error:", error);
+                };
+
+                ws.onclose = (event) => {
+                    console.log("🔌 WebSocket closed:", event.code, event.reason);
+                };
+
                 setWebSocket(ws);
 
-                // Start streaming session
-                await startStreamingSession(newSessionId, newSessionToken);
-                setAvatarInitializing(false);
+                // Step 4: Start the streaming session
+                const sessionStarted = await startStreamingSession(newSessionId, newSessionToken);
+                if (sessionStarted) {
+                    setAvatarInitializing(false);
+                    console.log("✅ Avatar session ready for conversation");
+                    
+                    // Wait a bit longer before marking as fully ready
+                    // This ensures the session is completely initialized
+                    setTimeout(() => {
+                        setSessionFullyReady(true);
+                        console.log("✅ Session is fully ready for interaction");
+                    }, 2000); // 2 second delay
+                } else {
+                    throw new Error("Failed to start streaming session");
+                }
+            } else {
+                throw new Error("No session data in response");
             }
         } catch (error) {
-            console.error("Error creating session:", error);
-            Alert.alert('Error', 'Failed to initialize avatar. Please try again.');
+            console.error("❌ Error creating session:", error);
+            Alert.alert(
+                'Fehler',
+                `Avatar-Initialisierung fehlgeschlagen: ${error.message}\n\nBitte versuchen Sie es erneut.`
+            );
             setAvatarInitializing(false);
         } finally {
             setLoading(false);
         }
     };
 
-    const sendTextToAvatar = async (text) => {
+    const sendTextToAvatar = async (text, retryCount = 0) => {
         if (!sessionId || !sessionToken) {
-            console.error('No active session');
-            return;
+            console.error('❌ No active session');
+            return false;
+        }
+
+        // Don't send if session is not fully ready
+        if (!sessionFullyReady && retryCount === 0) {
+            console.log('⏳ Session not fully ready yet, waiting...');
+            // Wait and retry
+            setTimeout(() => sendTextToAvatar(text, retryCount + 1), 2000);
+            return false;
         }
 
         try {
+            console.log("💬 Sending German text to avatar:", text);
             setSpeaking(true);
 
             const response = await fetch(
@@ -385,7 +499,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${sessionToken}`,
+                        "Authorization": `Bearer ${sessionToken}`,
                     },
                     body: JSON.stringify({
                         session_id: sessionId,
@@ -395,24 +509,50 @@ const TrapsPreparation = ({ navigation, route }) => {
                 }
             );
 
+            if (!response.ok) {
+                const errorText = await response.text();
+                
+                // If unauthorized and first retry, wait and try again
+                if (response.status === 401 && retryCount < 3) {
+                    console.log(`⚠️ Got 401, retrying in 2 seconds (attempt ${retryCount + 1}/3)...`);
+                    setSpeaking(false);
+                    setTimeout(() => sendTextToAvatar(text, retryCount + 1), 2000);
+                    return false;
+                }
+                
+                throw new Error(`Send text failed: ${response.status} - ${errorText}`);
+            }
+
             const data = await response.json();
-            console.log("Task response:", data);
+            console.log("✅ Avatar task response:", data);
+            
+            // Use the actual duration from the API response
+            if (data.data?.duration_ms) {
+                setTimeout(() => setSpeaking(false), data.data.duration_ms);
+            } else {
+                // Fallback: estimate duration
+                const estimatedDuration = Math.max(2000, text.length * 100);
+                setTimeout(() => setSpeaking(false), estimatedDuration);
+            }
+            
+            return true;
         } catch (error) {
-            console.error("Error sending text to avatar:", error);
-        } finally {
-            // Simulate speaking duration based on text length
-            const estimatedDuration = Math.max(2000, text.length * 100);
-            setTimeout(() => setSpeaking(false), estimatedDuration);
+            console.error("❌ Error sending text to avatar:", error);
+            setSpeaking(false);
+            return false;
         }
     };
 
     const closeSession = async () => {
         try {
             setLoading(true);
+
             if (!sessionId || !sessionToken) {
-                console.log("No active session");
+                console.log("ℹ️ No active session to close");
                 return;
             }
+
+            console.log("🔒 Closing session...");
 
             const response = await fetch(
                 `${API_CONFIG.serverUrl}/v1/streaming.stop`,
@@ -420,7 +560,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        Authorization: `Bearer ${sessionToken}`,
+                        "Authorization": `Bearer ${sessionToken}`,
                     },
                     body: JSON.stringify({
                         session_id: sessionId,
@@ -442,10 +582,12 @@ const TrapsPreparation = ({ navigation, route }) => {
             setToken("");
             setSpeaking(false);
             setAvatarReady(false);
+            setSessionFullyReady(false);
+            introSentRef.current = false;
 
-            console.log("Session closed successfully");
+            console.log("✅ Session closed successfully");
         } catch (error) {
-            console.error("Error closing session:", error);
+            console.error("❌ Error closing session:", error);
         } finally {
             setLoading(false);
         }
@@ -466,13 +608,16 @@ const TrapsPreparation = ({ navigation, route }) => {
         };
     }, []);
 
-    // Send introduction text when avatar is ready
+    // Send German introduction when avatar and session are fully ready
     useEffect(() => {
-        if (avatarReady && connected) {
-            const introText = "Hello! I'm here to help you with your psychological preparation. Please feel free to share your thoughts when you're ready.";
-            sendTextToAvatar(introText);
+        if (avatarReady && connected && sessionFullyReady && !introSentRef.current) {
+            introSentRef.current = true; // Prevent multiple sends
+            console.log("🎬 Sending introduction message...");
+            
+            const introTextGerman = "Hallo! Ich bin Sofia und helfe dir bei deiner psychologischen Vorbereitung. Bitte teile deine Gedanken mit mir, wenn du bereit bist. Du kannst auf Deutsch mit mir sprechen.";
+            sendTextToAvatar(introTextGerman);
         }
-    }, [avatarReady, connected]);
+    }, [avatarReady, connected, sessionFullyReady]);
 
     const handleRecordingToggle = () => {
         if (isRecording) {
@@ -491,9 +636,9 @@ const TrapsPreparation = ({ navigation, route }) => {
 
     const handleSaveAnswer = async () => {
         if (recordingComplete) {
-            // Send response to avatar (in real app, this would be the transcribed text)
-            const userResponse = "Thank you for the question. I've given this some thought and feel ready to proceed.";
-            await sendTextToAvatar(userResponse);
+            // Send German confirmation response to avatar
+            const userResponseGerman = "Danke für die Frage. Ich habe darüber nachgedacht und fühle mich bereit fortzufahren.";
+            await sendTextToAvatar(userResponseGerman);
         }
 
         if (isFinalStep) {
@@ -522,13 +667,30 @@ const TrapsPreparation = ({ navigation, route }) => {
     };
 
     const handleAvatarReady = () => {
+        console.log("✅ Avatar is ready for interaction");
         setAvatarReady(true);
     };
 
     const handleAvatarError = (error) => {
-        console.error('Avatar error:', error);
+        console.error('❌ Avatar error:', error);
         setAvatarInitializing(false);
-        Alert.alert('Avatar Error', 'There was an issue with the avatar. Please try again.');
+        Alert.alert('Avatar-Fehler', 'Es gab ein Problem mit dem Avatar. Bitte versuchen Sie es erneut.');
+    };
+
+    // German test commands
+    const handleTestGermanCommand = () => {
+        const testCommands = [
+            "Bitte stelle mir eine Frage über Beziehungen.",
+            "Erzähle mir etwas über Kommunikation in Partnerschaften.",
+            "Wie kann ich meine emotionale Intelligenz verbessern?",
+            "Was sind die häufigsten Beziehungsfallen?",
+            "Kannst du mir helfen, meine Gefühle besser zu verstehen?",
+            "Guten Tag! Wie geht es dir heute?",
+            "Vielen Dank für deine Hilfe.",
+        ];
+
+        const randomCommand = testCommands[Math.floor(Math.random() * testCommands.length)];
+        sendTextToAvatar(randomCommand);
     };
 
     return (
@@ -544,7 +706,6 @@ const TrapsPreparation = ({ navigation, route }) => {
                     sessionData={{ wsUrl, token, sessionId, sessionToken }}
                     avatarInitializing={avatarInitializing}
                 />
-
 
                 {/* Main Content */}
                 <SafeAreaView className="flex-1 justify-between">
@@ -564,7 +725,7 @@ const TrapsPreparation = ({ navigation, route }) => {
 
                             <View className="flex-1 items-center">
                                 <Text className="text-white text-base font-PoppinsBold text-center">
-                                    Traps & Preparation
+                                    Vorbereitung
                                 </Text>
                             </View>
 
@@ -590,12 +751,22 @@ const TrapsPreparation = ({ navigation, route }) => {
                                 <View className="items-center justify-center" style={{ minHeight: 56 }}>
                                     <Text className="text-white text-sm font-Poppins text-center leading-6">
                                         {avatarInitializing
-                                            ? "Preparing your session..."
-                                            : speaking
-                                                ? "Sofia is speaking..."
-                                                : "Allow yourself enough calm to reflect on each question and sense what feels true for you"
+                                            ? "Vorbereitung Ihrer Sitzung..."
+                                            : !sessionFullyReady
+                                                ? "Initialisierung läuft..."
+                                                : speaking
+                                                    ? "Sofia spricht..."
+                                                    : "Nimm dir Zeit, über jede Frage nachzudenken. Du kannst auf Deutsch antworten."
                                         }
                                     </Text>
+
+                                    {/* Debug info */}
+                                    {__DEV__ && (
+                                        <Text className="text-gray-400 text-xs mt-2">
+                                            Session: {sessionId ? 'Connected' : 'Disconnected'}
+                                            {sessionId && ` | Ready: ${sessionFullyReady ? 'Yes' : 'No'}`}
+                                        </Text>
+                                    )}
                                 </View>
                             ) : (
                                 <View className="items-center justify-center">
@@ -607,8 +778,8 @@ const TrapsPreparation = ({ navigation, route }) => {
                                         />
                                         <View className="flex-row items-center gap-3">
                                             <View>
-                                                <Text className="text-white font-PoppinsMedium">You</Text>
-                                                <Text className="text-gray-300 text-xs">Recording</Text>
+                                                <Text className="text-white font-PoppinsMedium">Sie</Text>
+                                                <Text className="text-gray-300 text-xs">Aufnahme</Text>
                                             </View>
                                             <RecordingWaves />
                                         </View>
@@ -631,17 +802,30 @@ const TrapsPreparation = ({ navigation, route }) => {
                             )}
                         </View>
 
+                        {/* Test button for German commands (DEV only) */}
+                        {__DEV__ && avatarReady && sessionFullyReady && !isRecording && !recordingComplete && (
+                            <TouchableOpacity
+                                onPress={handleTestGermanCommand}
+                                className="bg-blue-600 rounded-full px-4 py-2 mb-3"
+                                activeOpacity={0.8}
+                            >
+                                <Text className="text-white text-center font-PoppinsMedium">
+                                    Deutsches Testkommando
+                                </Text>
+                            </TouchableOpacity>
+                        )}
+
                         {/* Conditional Button Rendering */}
                         {recordingComplete ? (
                             <View className="flex-row justify-center items-center gap-3 mb-5">
                                 <Button
-                                    title="x Discard"
+                                    title="x Verwerfen"
                                     onPress={handleDiscard}
                                     variant="outlined"
                                 />
 
                                 <Button
-                                    title='Save answer'
+                                    title='Antwort speichern'
                                     onPress={handleSaveAnswer}
                                     variant="primary"
                                     style={{
@@ -669,12 +853,12 @@ const TrapsPreparation = ({ navigation, route }) => {
                                         elevation: 2,
                                     }}
                                     activeOpacity={0.8}
-                                    disabled={avatarInitializing}
+                                    disabled={avatarInitializing || !sessionFullyReady}
                                 >
                                     <Mic size={20} color={isRecording ? "#FFFFFF" : "#000000"} />
                                     <Text className={`text-base font-PoppinsMedium ${isRecording ? 'text-white' : 'text-black'
                                         }`}>
-                                        {isRecording ? 'Stop Recording' : 'Answer by voice'}
+                                        {isRecording ? 'Aufnahme stoppen' : 'Per Sprache antworten'}
                                     </Text>
                                 </TouchableOpacity>
 
@@ -683,7 +867,7 @@ const TrapsPreparation = ({ navigation, route }) => {
                                     style={{ backgroundColor: '#99225E' }}
                                     activeOpacity={0.8}
                                     onPress={() => navigation.navigate('PsychologicalChat')}
-                                    disabled={avatarInitializing}
+                                    disabled={avatarInitializing || !sessionFullyReady}
                                 >
                                     <Image
                                         source={require('../../../assets/icons/message.png')}

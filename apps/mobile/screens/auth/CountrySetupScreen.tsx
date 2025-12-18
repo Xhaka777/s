@@ -16,9 +16,10 @@ import { Button, GlowBackground, SecUnion } from '../../components';
 import { Search, ArrowLeft } from 'lucide-react-native';
 import { cities, countries, searchCities, searchCountries, getCountryByCity } from '../../location-data';
 import Input from '../../components/Input';
-import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
+// import { useCompleteStageTwo } from '../../api/hooks/useOnboarding';
 import { tokenStorage } from '../../api/services/tokenStorage';
 import { useQueryClient } from '@tanstack/react-query';
+import { useCompleteOnboardingStageTwoMutation } from '../../store';
 
 const CountrySetupScreen = ({ navigation, route }) => {
 
@@ -35,6 +36,8 @@ const CountrySetupScreen = ({ navigation, route }) => {
     const [showCountryDropdown, setShowCountryDropdown] = useState(false);
     const [cityResults, setCityResults] = useState([]);
     const [countryResults, setCountryResults] = useState(countries);
+    //
+    const [completeStageTwo, { isLoading: isCompletingStageTwo }] = useCompleteOnboardingStageTwoMutation();
 
     // Get user data from previous screen if passed via navigation
     const userData = route?.params?.userData || {};
@@ -98,22 +101,10 @@ const CountrySetupScreen = ({ navigation, route }) => {
         setShowCountryDropdown(true);
     };
 
-    const completeStageTwo = useCompleteStageTwo({
-        onSuccess: (response) => {
-            console.log('Stage Two success:', response);
-            // navigation.navigate('VerifyIdentity'); now is handled by AuthNavigator
-        },
-        onError: (error) => {
-            console.error('Stage Two error:', error);
-            Alert.alert('Error', error.message || 'Failed to complete profile setup');
-        },
-    });
 
 
     const handleNext = async () => {
-
         const storedToken = await tokenStorage.getToken();
-        console.log('storedToken', storedToken)
 
         if (selectedCity && selectedCountry) {
             const completeUserData = {
@@ -123,16 +114,23 @@ const CountrySetupScreen = ({ navigation, route }) => {
                 gender: mapGenderForAPI(profileData.selectedGender),
                 city: selectedCity.name,
                 country: selectedCountry.name,
-                token: storedToken
+                // Remove token from here - RTK will handle auth headers
             };
-            try {
-                await completeStageTwo.mutateAsync(completeUserData);
 
-                //Invalidate the onboarding status query to trigger a refetch
+            try {
+                // Use RTK mutation instead
+                const result = await completeStageTwo(completeUserData).unwrap();
+                console.log('Stage Two success:', result);
+
+                navigation.navigate('VerifyIdentity')
+
+                // Invalidate queries
                 queryClient.invalidateQueries({ queryKey: ['onboarding-status'] });
 
+                // Navigation will be handled by AuthNavigator
             } catch (error) {
-                console.error('API call failed:', error);
+                console.error('Stage Two error:', error);
+                Alert.alert('Error', error.message || 'Failed to complete profile setup');
             }
         }
     };

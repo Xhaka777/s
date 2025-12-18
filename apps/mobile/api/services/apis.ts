@@ -3,7 +3,7 @@ import { tokenStorage } from "./tokenStorage";
 export class ApiClient {
   private baseURL: string;
 
-  constructor(baseURL: string = 'http://192.168.1.5:3000') {
+  constructor(baseURL: string = 'http://192.168.1.11:3000') {
     this.baseURL = baseURL;
   }
 
